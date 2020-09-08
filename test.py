@@ -1,8 +1,15 @@
-import hashlib
+def removeSpaces( string):
+        '''
+        Удаляет все пустые символы в строке
+        '''
+        for n in string:
+            string = string.lstrip(' ')
+            string = string.rstrip(' ')
+            string = string.lstrip('\n')
+            string = string.rstrip('\n')
+        return string
 
-result = hashlib.md5('Игорь пидор'.encode()) 
-print(result.hexdigest())
-result
-new = input()
-new_result = hashlib.md5(new.encode())
-print(new_result.digest() == result.digest())
+print(removeSpaces('''
+
+
+        f''' ))

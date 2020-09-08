@@ -7,7 +7,7 @@ import hashlib
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
-    def __init__(self, url):
+    def __init__(self, url='http://127.0.0.1:5000'):
         super().__init__()
         self.setupUi(self) # Инициализация UI
         self.url = url # Создаём переменную, которая ссылается на адрес сервера
@@ -19,8 +19,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         Удаляет все пустые символы в строке
         '''
         for n in string:
-            string = string.lstrip('')
-            string = string.rstrip('')
+            string = string.lstrip(' ')
+            string = string.rstrip(' ')
             string = string.lstrip('\n')
             string = string.rstrip('\n')
         return string
@@ -115,6 +115,6 @@ try:
     app.exec_()
 except FileNotFoundError:
     app = QtWidgets.QApplication([])
-    window = Auth('http://127.0.0.1:5000')
+    window = Auth()
     window.show()
     app.exec_()

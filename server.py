@@ -8,8 +8,10 @@ from crypt import encrypt
 app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 messages = [
-    {'username': 'Jack', 'text': encrypt('Hello', 314), 'timestamp': time.time()},
-    {'username': 'Jack2', 'text': encrypt('Hello, Jack', 314), 'timestamp': time.time()},
+    {'username': 'Jack', 'text': encrypt(
+        'Hello', 314), 'timestamp': time.time()},
+    {'username': 'Jack2', 'text': encrypt(
+        'Hello, Jack', 314), 'timestamp': time.time()},
 ]
 
 users = {
@@ -69,6 +71,9 @@ def send_message():
     username = request.json['username']
     text = request.json['text']
 
+    if text == "":
+        return {"blankMessage": True}
+
     messages.append(
         {
             'username': username,
@@ -76,7 +81,7 @@ def send_message():
             'timestamp': time.time()
         })
 
-    return {'ok': True}
+    return 'ok'
 
 
 @app.route("/get_messages")
@@ -86,8 +91,6 @@ def get_message():
     result = []
 
     for message in messages:
-        if message == "":
-            return ["blankMessage"]
         if message['timestamp'] > after:
             result.append(message)
 
@@ -95,12 +98,16 @@ def get_message():
         'messages': result
     }
 
+
 @app.route("/get_users")
 def get_users():
     return "<meta charset='utf-8'>" + str(users)
+
 
 @app.route("/get_msgs")
 def get_messages():
     return "<meta charset='utf-8'>" + str(messages)
 
-app.run()
+
+if __name__ == '__main__':
+    app.run()

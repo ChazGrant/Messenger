@@ -19,6 +19,19 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.username = username
         self.password = password
 
+    def removeSpaces(self, string):
+        '''
+        Удаляет все пустые символы в строке
+        '''
+        for n in string:
+            string = string.lstrip(' ')
+            string = string.rstrip(' ')
+            string = string.lstrip('\t')
+            string = string.rstrip('\t')
+            string = string.lstrip('\n')
+            string = string.rstrip('\n')
+        return string
+
     def showError(self, text):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)
@@ -47,7 +60,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def send_message(self):
-        text = self.textEdit.toPlainText()
+        text = self.removeSpaces(self.textEdit.toPlainText())
+        print(text, "f")
         response = requests.get(
             'http://127.0.0.1:5000/send_message',
             json={
@@ -57,10 +71,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if response.status_code == 200:
             try:
                 if response.json()['blankMessage']:
-                    return self.showError("Сообщение не может быть пустым")
+                    self.showError("Сообщение не может быть пустым")
             except:
                 pass
-            self.textEdit.setText("")
+            return self.textEdit.setText("")
         else:
             self.showError("Ошибка в подключении к серверу")
             return self.close()

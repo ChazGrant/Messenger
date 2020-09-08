@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets
 from Auth import Auth
 
-app = QtWidgets.QApplication([])
+QT = QtWidgets.QApplication([])
 window = Auth()
 window.show()
-app.exec_()
+QT.exec_()
