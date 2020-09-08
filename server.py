@@ -60,7 +60,7 @@ def reg():
         users[username] = password
         return{'nameIsTaken': False}
     else:
-        return{'nameIsTaken': False}
+        return{'nameIsTaken': True}
     return 'ok'
 
 
@@ -86,6 +86,8 @@ def get_message():
     result = []
 
     for message in messages:
+        if message == "":
+            return ["blankMessage"]
         if message['timestamp'] > after:
             result.append(message)
 

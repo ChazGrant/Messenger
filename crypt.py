@@ -37,7 +37,3 @@ def decrypt(msg, shift):
         else:
             res += char
     return res
-
-
-msg = encrypt("HелЛ0", key)
-print(decrypt(msg,key))

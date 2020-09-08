@@ -8,9 +8,6 @@ import datetime
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def __init__(self, username='Jack', password=1234):
-        self.key = 314
-        self.username = username
-        self.password = password
         super().__init__()
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
@@ -18,6 +15,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
         self.last_timestamp = 0.0
+        self.key = 314
+        self.username = username
+        self.password = password
 
     def showError(self, text):
         msg = QMessageBox()
@@ -27,16 +27,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         msg.exec_()
 
     def update(self):
-        try:
-            response = requests.get(
+        response = requests.get(
                 'http://127.0.0.1:5000/get_messages',
                 params={
                     'after': self.last_timestamp, })
-        except:
-            self.showError(
-                "При попытке подключиться к серверу возникли ошибки")
-            return self.close()
-
+                    
         if response.status_code == 200:
             messages = response.json()['messages']
             for message in messages:
@@ -47,7 +42,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 self.textBrowser.append("")
                 self.last_timestamp = message['timestamp']
         else:
-            pass
+            self.showError(
+                "При попытке подключиться к серверу возникли ошибки")
+            return self.close()
 
     def send_message(self):
         text = self.textEdit.toPlainText()
@@ -57,13 +54,16 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 'username': self.username,
                 'text': encrypt(text, self.key), }
         )
-        try:
-            if response.json()['isFilled'] == False:
-                error_dialog = QtWidgets.QErrorMessage()
-                error_dialog.showMessage('Поля не должны быть пустыми')
-        except:
-            pass
-        self.textEdit.setText("")
+        if response.status_code == 200:
+            try:
+                if response.json()['blankMessage']:
+                    return self.showError("Сообщение не может быть пустым")
+            except:
+                pass
+            self.textEdit.setText("")
+        else:
+            self.showError("Ошибка в подключении к серверу")
+            return self.close()
 
 
 if __name__ == "__main__":
