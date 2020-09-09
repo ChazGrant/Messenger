@@ -7,8 +7,9 @@ import datetime
 
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='Jack', password=1234):
+    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1'):
         super().__init__()
+        self.url = url
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
         self.timer = QtCore.QTimer()
@@ -41,7 +42,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def update(self):
         response = requests.get(
-                'http://127.0.0.1:5000/get_messages',
+                self.url +'/get_messages',
                 params={
                     'after': self.last_timestamp, })
                     
@@ -64,7 +65,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if len(text) > 100:
             return self.showError("Длина сообщения должна быть не более 100")
         response = requests.get(
-            'http://127.0.0.1:5000/send_message',
+             self.url + '/send_message',
             json={
                 'username': self.username,
                 'text': encrypt(text, self.key), }

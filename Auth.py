@@ -74,7 +74,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 pass
 
             self.close()
-            self.main = Chat(self.username, self.password)
+            self.main = Chat(self.username, self.password, self.url)
             return self.main.show()
 
         else:
@@ -106,7 +106,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 pass
             
             self.close() # Закрываем текущее окно
-            self.main = Chat(self.username, self.password) # Инициализируем новое окно, передавая логин и пароль
+            self.main = Chat(self.username, self.password, self.url) # Инициализируем новое окно, передавая логин и пароль
             self.main.show() # Открываем инициализированное окно
             
         else:
