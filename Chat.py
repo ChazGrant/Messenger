@@ -61,7 +61,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def send_message(self):
         text = self.removeSpaces(self.textEdit.toPlainText())
-        print(text, "f")
+        if len(text) > 100:
+            return self.showError("Длина сообщения должна быть не более 100")
         response = requests.get(
             'http://127.0.0.1:5000/send_message',
             json={

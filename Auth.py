@@ -25,6 +25,13 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             string = string.rstrip('\n')
         return string
 
+    def clearSpaces(self, string):
+        string = string.replace(' ', '')
+        string = string.replace('\n', '')
+        string = string.replace('\t', '')
+        return string
+
+
     def showError(self, text):
         '''
         Создаёт окно с ошибкой и выводим текст
@@ -37,8 +44,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
     def login(self):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
-        self.username = self.removeSpaces(self.lineEdit.text())
-        self.password = self.removeSpaces(self.lineEdit_2.text())
+        self.username = self.clearSpaces(self.lineEdit.text())
+        self.password = self.clearSpaces(self.lineEdit_2.text())
         response = requests.get(self.url + '/login', # Передаём логин и пароль на сервер
                                 json={
                                     'username': self.username,
@@ -75,8 +82,9 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             return self.close()
 
     def registration(self):
-        self.username = self.lineEdit.text()
-        self.password = self.lineEdit_2.text()
+        self.username = self.clearSpaces(self.lineEdit.text())
+        self.password = self.clearSpaces(self.lineEdit_2.text())
+        print(self.username)
 
         response = requests.get(self.url + '/reg',
                                     json={
