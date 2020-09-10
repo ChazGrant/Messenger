@@ -9,7 +9,6 @@ import datetime
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def __init__(self, username='Jack', password=1234, url='http://127.0.0.1'):
         super().__init__()
-        self.url = url
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
         self.timer = QtCore.QTimer()
@@ -19,6 +18,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.key = 314
         self.username = username
         self.password = password
+        self.url = url
 
     def removeSpaces(self, string):
         '''
@@ -65,10 +65,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if len(text) > 100:
             return self.showError("Длина сообщения должна быть не более 100")
         response = requests.get(
-             self.url + '/send_message',
+            self.url + '/send_message',
             json={
                 'username': self.username,
-                'text': encrypt(text, self.key), }
+                'text': encrypt(text, self.key), 
+                }
         )
         if response.status_code == 200:
             try:

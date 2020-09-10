@@ -52,21 +52,21 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                                     'password': hashlib.md5(self.password.encode()).hexdigest(), })
 
         if response.status_code == 200:
-            ###Обработка ошибки пустых полей###
+            ### Обработка ошибки пустых полей ###
             try:
                 if response.json()['isNotFilled']:
                     return self.showError("Не все поля заполнены")
             except:
                 pass
 
-            ###Обработка ошибки неверного пароля###
+            ### Обработка ошибки неверного пароля ###
             try:
                 if response.json()['invalidPassword']:
                     return self.showError("Неверный пароль")
             except:
                 pass
 
-            ###Обработка ошибки неверного юзернейма###
+            ### Обработка ошибки неверного юзернейма ###
             try:
                 if response.json()['invalidUsername']:
                     return self.showError("Неверное имя пользователя")
@@ -91,14 +91,14 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                                         'username': self.username,
                                         'password': hashlib.md5(self.password.encode()).hexdigest() })
         if response.status_code == 200:
-            ###Обработка ошибки пустых полей###
+            ### Обработка ошибки пустых полей ###
             try:
                 if response.json()['isNotFilled']:
                     return self.showError("Не все поля заполнены")
             except:
                 pass
 
-            ###Обработка ошибки занятого юзернейма###
+            ### Обработка ошибки занятого юзернейма ###
             try:
                 if response.json()['nameIsTaken']:
                     return self.showError("Данное имя пользователя уже занято")
