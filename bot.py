@@ -35,14 +35,14 @@ commands = {
 while True:
     inp = input().replace('\t', '').replace('\n', '').split(' ')
     inp = [ch for ch in inp if ch]
-    print(inp)
+    if inp == []:
+        break
     name = None
     arg = None
     try:
         name, arg = inp[0].lower(), inp[1].lower()
     except:
         name = inp[0].lower()
-    print(name,arg)
     if len(inp) <= 2:
         arg = None if arg == "" else arg
         if name == "выход":
