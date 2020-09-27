@@ -3,7 +3,8 @@ from datetime import datetime
 import hashlib
 import time
 # Удалить после релиза (и список messages сделать пустым)
-from crypt import encrypt
+from crypt import *
+from bot import *
 
 app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
@@ -15,8 +16,22 @@ messages = [
 ]
 
 users = {
-    'Jack': hashlib.md5('1234'.encode()).hexdigest(),
-    'Jack2': hashlib.md5('5678'.encode()).hexdigest(),
+    'Jack': {
+        'password': hashlib.md5('1234'.encode()).hexdigest(),
+        'online': False
+    },
+    'Jack2': {
+        'password': hashlib.md5('5678'.encode()).hexdigest(),
+        'online': False
+    },
+    'Jack3': {
+        'password': hashlib.md5('1234'.encode()).hexdigest(),
+        'online': False
+    },
+    'Jack4': {
+        'password': hashlib.md5('5678'.encode()).hexdigest(),
+        'online': False
+    }
 }
 
 
@@ -45,10 +60,11 @@ def login():
     if username == "" or password == "":
         return {'isNotFilled': True}
     if username in users:
-        if users[username] != password:
+        if users[username]['password'] != password:
             return {'invalidPassword': True}
     else:
         return {'invalidUsername': True}
+    users[username]['online'] = True
     return 'ok'
 
 
@@ -58,28 +74,61 @@ def reg():
     password = request.json['password']
     if username == "" or password == "":
         return {'isNotFilled': True}
-    if username not in users:
-        users[username] = password
-        return{'nameIsTaken': False}
+    if username in users:
+        return {'nameIsTaken': True}
     else:
-        return{'nameIsTaken': True}
-    return 'ok'
+        users[username] = {}
+        users[username]['password'] = password
+        users[username]['online'] = True
+        return 'ok'
 
 
 @app.route("/send_message")
 def send_message():
     username = request.json['username']
     text = request.json['text']
-
+    text = decrypt(text, 314)
     if text == "":
         return {"blankMessage": True}
 
-    messages.append(
-        {
-            'username': username,
-            'text': text,
-            'timestamp': time.time()
-        })
+    inp = [ch for ch in text.split(' ') if ch]
+
+    name, arg = None, None
+    try:
+        name, arg = inp[0].lower(), inp[1].lower()
+    except:
+        name = inp[0].lower()
+    if len(inp) <= 2:
+        arg = None if arg == "" else arg
+        if name in commands:
+            if arg is not None:
+                messages.append(
+                    {
+                        'username': 'BOT',
+                        'text': encrypt(commands[name]['action'](arg), 314),
+                        'timestamp': time.time()
+                    })
+            else:
+                messages.append(
+                    {
+                        'username': 'BOT',
+                        'text': encrypt(commands[name]['action'](), 314),
+                        'timestamp': time.time()
+                    })
+        else:
+            messages.append(
+                {
+                    'username': 'BOT',
+                    'text': encrypt(f"'{text}' - Такой команды нет", 314),
+                    'timestamp': time.time()
+                })
+    else:
+        messages.append(
+            {
+                'username': 'BOT',
+                'text': encrypt("Слишком много аргументов", 314),
+                'timestamp': time.time()
+            })
 
     return 'ok'
 
@@ -101,12 +150,18 @@ def get_message():
 
 @app.route("/get_users")
 def get_users():
-    return "<meta charset='utf-8'>" + str(users)
+    # Возвращаем словарь
+    # users нужен, чтобы обращаться к нему как к json, list нужен, чтобы перебирать никнеймы
+    return {
+        'users': list(users.keys()),
+        'isOnline': list(users[x]['online'] for x in users.keys())
+    }
 
 
-@app.route("/get_msgs")
-def get_messages():
-    return "<meta charset='utf-8'>" + str(messages)
+@app.route("/disconnect")
+def discoonect():
+    name = request.json()['username']
+    users[name]['online'] = False
 
 
 if __name__ == '__main__':

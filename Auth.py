@@ -49,7 +49,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         response = requests.get(self.url + '/login', # Передаём логин и пароль на сервер
                                 json={
                                     'username': self.username,
-                                    'password': hashlib.md5(self.password.encode()).hexdigest(), })
+                                    'password': hashlib.md5(self.password.encode()).hexdigest()
+                                })
 
         if response.status_code == 200:
             ### Обработка ошибки пустых полей ###

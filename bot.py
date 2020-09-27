@@ -32,27 +32,27 @@ commands = {
     },
 }
 
-while True:
-    inp = input().replace('\t', '').replace('\n', '').split(' ')
-    inp = [ch for ch in inp if ch]
-    if inp == []:
-        break
-    name = None
-    arg = None
-    try:
-        name, arg = inp[0].lower(), inp[1].lower()
-    except:
-        name = inp[0].lower()
-    if len(inp) <= 2:
-        arg = None if arg == "" else arg
-        if name == "выход":
+if __name__ == "__main__":
+    while True:
+        inp = input().replace('\t', '').replace('\n', '')
+        inp = [ch for ch in inp.split(' ') if ch]
+        if inp == []:
             break
-        if name in commands:
-            if arg is not None:
-                print(commands[name]['action'](arg))
+        name, arg = None, None
+        try:
+            name, arg = inp[0].lower(), inp[1].lower()
+        except:
+            name = inp[0].lower()
+        if len(inp) <= 2:
+            arg = None if arg == "" else arg
+            if name == "выход":
+                break
+            if name in commands:
+                if arg is not None:
+                    print(commands[name]['action'](arg))
+                else:
+                    print(commands[name]['action']())
             else:
-                print(commands[name]['action']())
+                print("Такой команды нет")
         else:
-            print("Такой команды нет")
-    else:
-        print("Слишком много аргументов")
+            print("Слишком много аргументов")

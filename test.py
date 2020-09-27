@@ -1,15 +1,24 @@
-def removeSpaces( string):
-        '''
-        Удаляет все пустые символы в строке
-        '''
-        for n in string:
-            string = string.lstrip(' ')
-            string = string.rstrip(' ')
-            string = string.lstrip('\n')
-            string = string.rstrip('\n')
-        return string
+import hashlib
 
-print(removeSpaces('''
+users = {
+    'Jack': {
+        'password': hashlib.md5('1234'.encode()).hexdigest(),
+        'online': False
+        },
+    'Jack2': {
+        'password': hashlib.md5('5678'.encode()).hexdigest(),
+        'online': False
+    },
+    'Jack3': {
+        'password': hashlib.md5('1234'.encode()).hexdigest(),
+        'online': False
+        },
+    'Jack4': {
+        'password': hashlib.md5('5678'.encode()).hexdigest(),
+        'online': False
+    }
+}
 
-
-        f''' ))
+print(
+        
+)

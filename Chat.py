@@ -1,13 +1,14 @@
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QMessageBox
-from crypt import encrypt, decrypt
+from PyQt5.QtWidgets import QMessageBox, QListView
+from crypt import *
 import MainUI
 import requests
 import datetime
 
+knownUsers = []
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1'):
+    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1:5000'):
         super().__init__()
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
@@ -19,6 +20,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.username = username
         self.password = password
         self.url = url
+        
 
     def removeSpaces(self, string):
         '''
@@ -41,6 +43,30 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         msg.exec_()
 
     def update(self):
+        responseUsers = requests.get(
+                self.url +'/get_users',
+                )
+        responseUsers.json()['users']
+        users = responseUsers.json()['users']
+        isOnline = responseUsers.json()['isOnline']
+        usersCount = len(users)
+        self.listWidget.clear()
+        for user, x in zip(users,isOnline):
+            online = "Online" if isOnline[x] else "Offline"
+            self.listWidget.addItem(user + f' ({online})')
+        '''
+        for user, x in zip(users,isOnline):
+            if user not in knownUsers:
+                online = "Online" if isOnline[x] else "Offline"
+                self.listWidget.addItem(user + f' ({online})')
+                knownUsers.append(user)
+            #self.listWidget.
+        for known in knownUsers:
+            try:
+                online = "Online" if users[known]['isOnline'] else "Offline"
+            except:
+                pass
+            '''
         response = requests.get(
                 self.url +'/get_messages',
                 params={
@@ -51,6 +77,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             for message in messages:
                 dt = datetime.datetime.fromtimestamp(
                     message['timestamp']).strftime('%H:%M:%S')
+                
                 self.textBrowser.append(dt + " " +
                                         message['username'] + ": " + decrypt(message['text'], self.key))
                 self.textBrowser.append("")
@@ -82,6 +109,14 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.showError("Ошибка в подключении к серверу")
             return self.close()
 
+
+    def disconnect(self):
+        response = requests.get(
+            self.url + "/disconnect",
+            json={
+                "username": self.username
+            }
+        )
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
