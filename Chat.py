@@ -42,6 +42,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         msg.setWindowTitle("Error")
         msg.exec_()
 
+    # Переопределяем метод выхода из приложения
+    def closeEvent(self, event):
+        self.disconnect()
+        event.accept()
+
     def update(self):
         responseUsers = requests.get(
                 self.url +'/get_users',
@@ -49,24 +54,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         responseUsers.json()['users']
         users = responseUsers.json()['users']
         isOnline = responseUsers.json()['isOnline']
-        usersCount = len(users)
         self.listWidget.clear()
         for user, x in zip(users,isOnline):
-            online = "Online" if isOnline[x] else "Offline"
+            online = "Online" if x else "Offline"
             self.listWidget.addItem(user + f' ({online})')
-        '''
-        for user, x in zip(users,isOnline):
-            if user not in knownUsers:
-                online = "Online" if isOnline[x] else "Offline"
-                self.listWidget.addItem(user + f' ({online})')
-                knownUsers.append(user)
-            #self.listWidget.
-        for known in knownUsers:
-            try:
-                online = "Online" if users[known]['isOnline'] else "Offline"
-            except:
-                pass
-            '''
         response = requests.get(
                 self.url +'/get_messages',
                 params={
@@ -98,6 +89,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 'text': encrypt(text, self.key), 
                 }
         )
+        print(response)
         if response.status_code == 200:
             try:
                 if response.json()['blankMessage']:
@@ -106,6 +98,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 pass
             return self.textEdit.setText("")
         else:
+            print("Чзх")
             self.showError("Ошибка в подключении к серверу")
             return self.close()
 

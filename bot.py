@@ -1,5 +1,6 @@
 import requests
 
+
 def info(arg=None):
     if arg is None:
         return commands['!помощь']['desc']
@@ -7,26 +8,28 @@ def info(arg=None):
         arg = f"!{arg}"
         return commands[arg]['desc'] if arg in commands else "Такой комманды нет"
 
+
 def weather(arg=None):
     return 'Да да'
+
 
 def get_status(arg=None, url='http://127.0.0.1:5000'):
     response = requests.get(url + '/status')
     return f'Текущее время на сервере: {response.json()["server_current_time"]} \
     \nКол-во сообщений: {response.json()["current_messages"]} \nВремя запуска сервера:\
     {response.json()["server_start_time"]}'
-    
+
 
 commands = {
-    "!погода":{
+    "!погода": {
         "desc": "Выводит информацию о погоде",
         "action": weather
     },
-    "!помощь":{
+    "!помощь": {
         "desc": "Выводит информацию о нужной команде",
         "action": info
     },
-    "!статус":{
+    "!статус": {
         "desc": "Возвращает статус сервера",
         "action": get_status
     },

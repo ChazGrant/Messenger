@@ -76,18 +76,17 @@ def reg():
         return {'isNotFilled': True}
     if username in users:
         return {'nameIsTaken': True}
-    else:
-        users[username] = {}
-        users[username]['password'] = password
-        users[username]['online'] = True
-        return 'ok'
+    users[username] = {}
+    users[username]['password'] = password
+    users[username]['online'] = True
+    print(users[username]['online'])
+    return 'ok'
 
 
 @app.route("/send_message")
 def send_message():
     username = request.json['username']
-    text = request.json['text']
-    text = decrypt(text, 314)
+    text = decrypt(request.json['text'], 314)
     if text == "":
         return {"blankMessage": True}
 
@@ -115,18 +114,11 @@ def send_message():
                         'text': encrypt(commands[name]['action'](), 314),
                         'timestamp': time.time()
                     })
-        else:
-            messages.append(
-                {
-                    'username': 'BOT',
-                    'text': encrypt(f"'{text}' - Такой команды нет", 314),
-                    'timestamp': time.time()
-                })
     else:
         messages.append(
             {
-                'username': 'BOT',
-                'text': encrypt("Слишком много аргументов", 314),
+                'username': username,
+                'text': encrypt(text, 314),
                 'timestamp': time.time()
             })
 
@@ -152,6 +144,7 @@ def get_message():
 def get_users():
     # Возвращаем словарь
     # users нужен, чтобы обращаться к нему как к json, list нужен, чтобы перебирать никнеймы
+
     return {
         'users': list(users.keys()),
         'isOnline': list(users[x]['online'] for x in users.keys())
@@ -159,9 +152,11 @@ def get_users():
 
 
 @app.route("/disconnect")
-def discoonect():
-    name = request.json()['username']
+def disconnect():
+    name = request.json['username']
     users[name]['online'] = False
+    print(users[name]['online'])
+    return 'ok'
 
 
 if __name__ == '__main__':
