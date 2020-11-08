@@ -52,6 +52,11 @@ def status():
         'current_messages': len(messages)
     }
 
+@app.route("/connect")
+def conn():
+    server_id = request.json['server_id']
+    username = request.json['username']
+    users[username]['online'] = True
 
 @app.route("/login")
 def login():
@@ -65,7 +70,7 @@ def login():
     else:
         return {'invalidUsername': True}
     users[username]['online'] = True
-    return 'ok'
+    return {'ok': True}
 
 
 @app.route("/reg")
@@ -80,6 +85,12 @@ def reg():
     users[username]['password'] = password
     users[username]['online'] = True
     print(users[username]['online'])
+    messages.append(
+        {
+            "username": "BOT",
+            "text": encrypt(f"{username}, добро пожаловать в чат", 314),
+            "timestamp": time.time()
+        })
     return 'ok'
 
 

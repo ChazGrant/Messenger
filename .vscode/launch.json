@@ -6,14 +6,11 @@
     "configurations": [
         {
             "name": "(Windows) Запустить",
-            "type": "cppvsdbg",
+            "type": "python",
             "request": "launch",
-            "program": "Введите имя программы, например: ${workspaceFolder}/a.exe",
+            "program": "${file}",
             "args": [],
-            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false
         }
     ]
 }

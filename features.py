@@ -17,3 +17,22 @@
 # Добавить пользователям аватарки
 # Добавление ролей
 # Кидать запрос на приглашение
+'''
+servers = {
+    "testServer":[
+        messages{
+            'username': "ff",
+            'text': "hello",
+            'timestamp': 22.12.2020
+        },
+        users{
+            "Leha":
+            {
+                "password": "555",
+                "online": True
+            }
+        },
+        admins["Leha"]
+    ]
+}
+'''

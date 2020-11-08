@@ -1,24 +1,25 @@
-import hashlib
-
-users = {
-    'Jack': {
-        'password': hashlib.md5('1234'.encode()).hexdigest(),
-        'online': False
+'''servers = {
+    "testServer":{
+        "messages": {
+            'username': "ff",
+            'text': "hello",
+            'timestamp': '22.12.2020'
         },
-    'Jack2': {
-        'password': hashlib.md5('5678'.encode()).hexdigest(),
-        'online': False
-    },
-    'Jack3': {
-        'password': hashlib.md5('1234'.encode()).hexdigest(),
-        'online': False
+        "users": {
+            "Leha":
+            {
+                "password": "555",
+                "online": True
+            }
         },
-    'Jack4': {
-        'password': hashlib.md5('5678'.encode()).hexdigest(),
-        'online': False
+        "admin": "Leha"
     }
 }
 
-print(
-        
-)
+print(servers["testServer"]["messages"]["text"])
+for i in servers["testServer"]["admins"]:
+    print(i)
+'''
+import time
+
+print(time.time())
