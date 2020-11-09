@@ -15,11 +15,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
-        self.last_timestamp = 0.0
-        self.key = 314
-        self.username = username
-        self.password = password
-        self.url = url
+        self._timestamp = 0.0
+        self._username = username
+        self._password = password
+        self.__key = 314
+        self.__url = url
         
 
     def removeSpaces(self, string):
@@ -49,7 +49,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def update(self):
         responseUsers = requests.get(
-                self.url +'/get_users',
+                self.__url +'/get_users',
                 )
         responseUsers.json()['users']
         users = responseUsers.json()['users']
@@ -59,9 +59,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             online = "Online" if x else "Offline"
             self.listWidget.addItem(user + f' ({online})')
         response = requests.get(
-                self.url +'/get_messages',
+                self.__url +'/get_messages',
                 params={
-                    'after': self.last_timestamp, })
+                    'after': self._timestamp, })
                     
         if response.status_code == 200:
             messages = response.json()['messages']
@@ -70,9 +70,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     message['timestamp']).strftime('%H:%M:%S')
                 
                 self.textBrowser.append(dt + " " +
-                                        message['username'] + ": " + decrypt(message['text'], self.key))
+                                        message['username'] + ": " + decrypt(message['text'], self.__key))
                 self.textBrowser.append("")
-                self.last_timestamp = message['timestamp']
+                self._timestamp = message['timestamp']
         else:
             self.showError(
                 "При попытке подключиться к серверу возникли ошибки")
@@ -83,10 +83,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if len(text) > 100:
             return self.showError("Длина сообщения должна быть не более 100")
         response = requests.get(
-            self.url + '/send_message',
+            self.__url + '/send_message',
             json={
-                'username': self.username,
-                'text': encrypt(text, self.key), 
+                'username': self._username,
+                'text': encrypt(text, self.__key), 
                 }
         )
         print(response)
@@ -105,9 +105,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def disconnect(self):
         response = requests.get(
-            self.url + "/disconnect",
+            self.__url + "/disconnect",
             json={
-                "username": self.username
+                "username": self._username
             }
         )
 

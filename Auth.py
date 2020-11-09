@@ -10,7 +10,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url='http://127.0.0.1:5000'):
         super().__init__()
         self.setupUi(self) # Инициализация UI
-        self.url = url # Создаём переменную, которая ссылается на адрес сервера
+        self.__url = url # Создаём переменную, которая ссылается на адрес сервера
         self.pushButton.pressed.connect(self.login) # Связываем событие нажатия на первую кнопку с функцией входа
         self.pushButton_2.pressed.connect(self.registration) # Связываем событие нажатия на первую кнопку с функцией регистрации
 
@@ -44,12 +44,12 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
     def login(self):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
-        self.username = self.clearSpaces(self.lineEdit.text())
-        self.password = self.lineEdit_2.text()
-        response = requests.get(self.url + '/login', # Передаём логин и пароль на сервер
+        self._username = self.clearSpaces(self.lineEdit.text())
+        self.__password = self.lineEdit_2.text()
+        response = requests.get(self.__url + '/login', # Передаём логин и пароль на сервер
                                 json={
-                                    'username': self.username,
-                                    'password': hashlib.md5(self.password.encode()).hexdigest()
+                                    'username': self._username,
+                                    'password': hashlib.md5(self.__password.encode()).hexdigest()
                                 })
 
         if response.status_code == 200:
@@ -62,7 +62,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                     return self.showError("Неверное имя пользователя и/или пароль")
 
             self.close()
-            self.main = Chat(self.username, self.password, self.url)
+            self.main = Chat(self._username, self.__password, self.__url)
             return self.main.show()
 
         else:
@@ -70,12 +70,12 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             return self.close()
 
     def registration(self):
-        self.username = " ".join(self.lineEdit.text().split())
-        self.password = self.lineEdit_2.text()
-        response = requests.get(self.url + '/reg',
+        self._username = " ".join(self.lineEdit.text().split())
+        self.__password = self.lineEdit_2.text()
+        response = requests.get(self.__url + '/reg',
                                     json={
-                                        'username': self.username,
-                                        'password': hashlib.md5(self.password.encode()).hexdigest() })
+                                        'username': self._username,
+                                        'password': hashlib.md5(self.__password.encode()).hexdigest() })
         if response.status_code == 200:
            
             if "isNotFilled" in response.json():
@@ -85,7 +85,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                     return self.showError("Данное имя пользователя уже занято")
             
             self.close() # Закрываем текущее окно
-            self.main = Chat(self.username, self.password, self.url) # Инициализируем новое окно, передавая логин и пароль
+            self.main = Chat(self._username, self.__password, self.__url) # Инициализируем новое окно, передавая логин и пароль
             return self.main.show() # Открываем инициализированное окно
             
         else:
