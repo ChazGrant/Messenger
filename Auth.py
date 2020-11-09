@@ -58,12 +58,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 return self.showError("Не все поля заполнены")
 
             ### Обработка ошибки неверного пароля ###
-            if "invalidPassword" in response.json():
-                    return self.showError("Неверный пароль")
-
-            ### Обработка ошибки неверного юзернейма ###
-            if "invalidUsername" in response.json():
-                return self.showError("Неверное имя пользователя")
+            if "invalidData" in response.json():
+                    return self.showError("Неверное имя пользователя и/или пароль")
 
             self.close()
             self.main = Chat(self.username, self.password, self.url)

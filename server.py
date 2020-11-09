@@ -5,6 +5,10 @@ import time
 # Удалить после релиза (и список messages сделать пустым)
 from crypt import *
 from bot import *
+import sqlite3 as sq
+
+conn = sq.connect("Messenger.db")
+cur = conn.cursor()
 
 app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
@@ -64,13 +68,11 @@ def login():
     password = request.json['password']
     if username == "" or password == "":
         return {'isNotFilled': True}
-    if username in users:
-        if users[username]['password'] != password:
-            return {'invalidPassword': True}
-    else:
-        return {'invalidUsername': True}
-    users[username]['online'] = True
-    return {'ok': True}
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        if cur.execute(f"SELECT user_id from users WHERE username='{username}' AND password='{password}';").fetchone():
+            return {'ok': True}
+        return {'invalidData': True}
 
 
 @app.route("/reg")
