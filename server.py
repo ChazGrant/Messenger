@@ -58,9 +58,21 @@ def status():
 
 @app.route("/connect")
 def conn():
-    server_id = request.json['server_id']
-    username = request.json['username']
-    users[username]['online'] = True
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        server_id = request.json['server_id']
+        username = request.json['username']
+        users = cur.execute(f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
+        for user in users:
+            print(user)
+        return {'ok': True}
+        try:
+            cur.execute(f"UPDATE servers  SET `server_name` = `server_name` || '{username}' WHERE `server_id`='{server_id}';")
+            conn.commit()
+            print(cur.execute("SELECT * FROM servers;").fetchall())
+        except Exception as e:
+            return {"DB_Error": True}
+    return {'ok': True}
 
 @app.route("/login")
 def login():
@@ -70,29 +82,24 @@ def login():
         return {'isNotFilled': True}
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        if cur.execute(f"SELECT user_id from users WHERE username='{username}' AND password='{password}';").fetchone():
+        if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{password}';").fetchone():
             return {'ok': True}
         return {'invalidData': True}
 
 
 @app.route("/reg")
 def reg():
-    username = request.json['username']
-    password = request.json['password']
-    if username == "" or password == "":
-        return {'isNotFilled': True}
-    if username in users:
-        return {'nameIsTaken': True}
-    users[username] = {}
-    users[username]['password'] = password
-    users[username]['online'] = True
-    print(users[username]['online'])
-    messages.append(
-        {
-            "username": "BOT",
-            "text": encrypt(f"{username}, добро пожаловать в чат", 314),
-            "timestamp": time.time()
-        })
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        username = request.json['username']
+        password = request.json['password']
+        if username == "" or password == "":
+            return {'isNotFilled': True}
+        if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{username}';").fetchone():
+            return {'nameIsTaken': True}
+        else:
+            cur.execute("INSERT INTO users(username, password) VALUES(?, ?);", (username, password))
+            conn.commit()
     return 'ok'
 
 
@@ -157,20 +164,24 @@ def get_message():
 def get_users():
     # Возвращаем словарь
     # users нужен, чтобы обращаться к нему как к json, list нужен, чтобы перебирать никнеймы
-
+    with sq.connect("Messenger.db") as conn:
+        server_id = request.json["server_id"]
+        cur = conn.cursor()
+        res = cur.execute(f"SELECT username, isOnline FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
     return {
-        'users': list(users.keys()),
-        'isOnline': list(users[x]['online'] for x in users.keys())
+        'res': res
     }
 
 
 @app.route("/disconnect")
 def disconnect():
-    name = request.json['username']
-    users[name]['online'] = False
-    print(users[name]['online'])
+    with sq.connect("Messenger.db") as conn:
+        username = request.json['username']
+        cur = conn.cursor()
+        cur.execute(f"UPDATE `users` SET `isOnline`=0 WHERE `username`='{username}';")
+        conn.commit()
     return 'ok'
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

@@ -8,7 +8,7 @@ import datetime
 knownUsers = []
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1:5000'):
+    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1:5000', server_id=1):
         super().__init__()
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
@@ -20,6 +20,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self._password = password
         self.__key = 314
         self.__url = url
+        self.__server_id = server_id
         
 
     def removeSpaces(self, string):
@@ -50,7 +51,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def update(self):
         responseUsers = requests.get(
                 self.__url +'/get_users',
-                )
+                json=
+                {
+                    "server_id": self.__server_id
+                })
         responseUsers.json()['users']
         users = responseUsers.json()['users']
         isOnline = responseUsers.json()['isOnline']

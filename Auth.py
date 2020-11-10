@@ -23,6 +23,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             string = string.rstrip(' ')
             string = string.lstrip('\n')
             string = string.rstrip('\n')
+            string = string.rstrip('\t')
+            string = string.rstrip('\t')
         return string
 
     def clearSpaces(self, string):
@@ -45,7 +47,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def login(self):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
         self._username = self.clearSpaces(self.lineEdit.text())
-        self.__password = self.lineEdit_2.text()
+        self.__password = self.removeSpaces(self.lineEdit_2.text())
         response = requests.get(self.__url + '/login', # Передаём логин и пароль на сервер
                                 json={
                                     'username': self._username,

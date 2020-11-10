@@ -1,25 +1,15 @@
-'''servers = {
-    "testServer":{
-        "messages": {
-            'username': "ff",
-            'text': "hello",
-            'timestamp': '22.12.2020'
-        },
-        "users": {
-            "Leha":
-            {
-                "password": "555",
-                "online": True
-            }
-        },
-        "admin": "Leha"
-    }
-}
-
-print(servers["testServer"]["messages"]["text"])
-for i in servers["testServer"]["admins"]:
-    print(i)
+import requests
+import hashlib
 '''
-import time
+responseUsers = requests.get('http://127.0.0.1:5000/get_users',
+                json=
+                {
+                    "server_id": 1
+                })
 
-print(time.time())
+resp = responseUsers.json()['res']
+print(resp[0])
+'''
+
+f = ""
+print(hashlib.md5(f.encode()).hexdigest())
