@@ -12,6 +12,8 @@ cur = conn.cursor()
 
 app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+last_timestamps = dict()
+
 messages = [
     {'username': 'Jack', 'text': encrypt(
         'Hello', 314), 'timestamp': time.time()},
@@ -46,18 +48,28 @@ def hello():
 
 @app.route("/status")
 def status():
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        serv = cur.execute(f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchall()
+        messages_count = len(cur.execute(f"SELECT `server_id` FROM `messages` WHERE `server_id`={server_id};").fetchall())
     return{
         'status': 'OK',
-        'name': 'Mezzano Corp',
-        'server_start_time': server_start,
-        'server_current_time': datetime.now().strftime('%H:%M:%S %d/%m/%Y'),
-        'current_time_seconds': time.time(),
-        'current_users': len(users),
-        'current_messages': len(messages)
+        'name': serv[0],
+        'server_start_time': serv[1],
+        'current_time': datetime.now().strftime('%H:%M:%S %d/%m/%Y'),
+        'current_users': len(serv[2].split()),
+        'current_messages': messages_count
     }
 
+@app.route("/create_server")
+def create_server:
+    pass
+    '''
+Название сервера, дата запуска, админ
+    '''
+
 @app.route("/connect")
-def conn():
+def connect():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         server_id = request.json['server_id']
@@ -107,8 +119,12 @@ def reg():
 def send_message():
     username = request.json['username']
     text = decrypt(request.json['text'], 314)
+    server_id = request.json['server_id']
+
     if text == "":
         return {"blankMessage": True}
+
+    last_timestamps[server_id] = time.time()
 
     inp = [ch for ch in text.split(' ') if ch]
 
@@ -117,47 +133,45 @@ def send_message():
         name, arg = inp[0].lower(), inp[1].lower()
     except:
         name = inp[0].lower()
-    if len(inp) <= 2:
-        arg = None if arg == "" else arg
-        if name in commands:
-            if arg is not None:
-                messages.append(
-                    {
-                        'username': 'BOT',
-                        'text': encrypt(commands[name]['action'](arg), 314),
-                        'timestamp': time.time()
-                    })
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        if len(inp) <= 2:
+            arg = None if arg == "" else arg
+            if name in commands:
+                if arg is not None:
+                    server_id = request.json["server_id"]
+                    
+                    cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
+                        "BOT", encrypt(commands[name]['action'](arg), 314), time.time(), server_id))
+                else:
+                    cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
+                        "BOT", encrypt(commands[name]['action'](), 314), time.time(), server_id))
             else:
-                messages.append(
-                    {
-                        'username': 'BOT',
-                        'text': encrypt(commands[name]['action'](), 314),
-                        'timestamp': time.time()
-                    })
-    else:
-        messages.append(
-            {
-                'username': username,
-                'text': encrypt(text, 314),
-                'timestamp': time.time()
-            })
+                cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
+                        username, encrypt(text, 314), time.time(), server_id))
+        else:
+            cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
+                        username, encrypt(text, 314), time.time(), server_id))
 
-    return 'ok'
+    return {'ok': True}
 
 
 @app.route("/get_messages")
 def get_message():
-    after = float(request.args['after'])
-
-    result = []
-
-    for message in messages:
-        if message['timestamp'] > after:
-            result.append(message)
-
-    return{
-        'messages': result
-    }
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        after = float(request.args['after'])
+        server_id = int(request.args['server_id'])
+        try:
+            if last_timestamps[server_id] >= after:
+                res = cur.execute(f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+                return {'messages': res}
+            else:
+                return {'messages': []}
+        except:
+            last_timestamps[server_id] = after
+            res = cur.execute(f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+            return {'messages': res}
 
 
 @app.route("/get_users")

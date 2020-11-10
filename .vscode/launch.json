@@ -12,5 +12,6 @@
             "args": [],
             "cwd": "${workspaceFolder}",
         }
-    ]
+    ],
+    "python.languageServer": "Jedi"
 }

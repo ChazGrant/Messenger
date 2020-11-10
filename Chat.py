@@ -55,28 +55,33 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 {
                     "server_id": self.__server_id
                 })
-        responseUsers.json()['users']
-        users = responseUsers.json()['users']
-        isOnline = responseUsers.json()['isOnline']
+        res = responseUsers.json()['res']
         self.listWidget.clear()
-        for user, x in zip(users,isOnline):
-            online = "Online" if x else "Offline"
-            self.listWidget.addItem(user + f' ({online})')
+        for i in res:
+            status = "Online" if i[1] else "Offline"
+            self.listWidget.addItem(i[0] + f' ({status})')
         response = requests.get(
                 self.__url +'/get_messages',
                 params={
-                    'after': self._timestamp, })
+                    'after': self._timestamp,
+                    'server_id': self.__server_id
+                    })
                     
         if response.status_code == 200:
             messages = response.json()['messages']
             for message in messages:
+                ### 
+                # 0 - имя пользователя 
+                # 1 - сообщение
+                # 2 - время
+                ###
                 dt = datetime.datetime.fromtimestamp(
-                    message['timestamp']).strftime('%H:%M:%S')
+                    message[2]).strftime('%H:%M:%S')
                 
                 self.textBrowser.append(dt + " " +
-                                        message['username'] + ": " + decrypt(message['text'], self.__key))
+                                        message[0] + ": " + decrypt(message[1], self.__key))
                 self.textBrowser.append("")
-                self._timestamp = message['timestamp']
+                self._timestamp = message[2]
         else:
             self.showError(
                 "При попытке подключиться к серверу возникли ошибки")
@@ -91,6 +96,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             json={
                 'username': self._username,
                 'text': encrypt(text, self.__key), 
+                'server_id': self.__server_id,
                 }
         )
         print(response)

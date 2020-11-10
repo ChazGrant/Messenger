@@ -3,10 +3,10 @@ import requests
 
 def info(arg=None):
     if arg is None:
-        return commands['!помощь']['desc']
+        return "!помощь - " + commands['!помощь']['desc']
     else:
         arg = f"!{arg}"
-        return commands[arg]['desc'] if arg in commands else "Такой комманды нет"
+        return (arg + " - " + commands[arg]['desc']) if arg in commands else arg + " - Такой команды нет"
 
 
 def weather(arg=None):

@@ -1,6 +1,7 @@
 import requests
+import time
 import hashlib
-'''
+
 responseUsers = requests.get('http://127.0.0.1:5000/get_users',
                 json=
                 {
@@ -8,8 +9,5 @@ responseUsers = requests.get('http://127.0.0.1:5000/get_users',
                 })
 
 resp = responseUsers.json()['res']
-print(resp[0])
-'''
-
-f = ""
-print(hashlib.md5(f.encode()).hexdigest())
+for i in resp:
+    print(i[0], "(Online)" if i[1] else "(Offline)")
