@@ -85,7 +85,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
             if "nameIsTaken" in response.json():
                     return self.showError("Данное имя пользователя уже занято")
-            
+        
             self.close() # Закрываем текущее окно
             self.main = Chat(self._username, self.__password, self.__url) # Инициализируем новое окно, передавая логин и пароль
             return self.main.show() # Открываем инициализированное окно

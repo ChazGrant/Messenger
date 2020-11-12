@@ -4,6 +4,5 @@ import hashlib
 
 conn = sq.connect("Messenger.db")
 cur = conn.cursor()
-cur.execute("UPDATE servers SET `server_name`='JUST TALKING' WHERE `server_id` = '1';")
-conn.commit()
-print(cur.execute("SELECT * FROM servers;").fetchall())
+serv = cur.execute(f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchall()
+print(serv)

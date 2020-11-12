@@ -15,9 +15,12 @@ def weather(arg=None):
 
 def get_status(arg=None, url='http://127.0.0.1:5000'):
     response = requests.get(url + '/status')
-    return f'Текущее время на сервере: {response.json()["server_current_time"]} \
-    \nКол-во сообщений: {response.json()["current_messages"]} \nВремя запуска сервера:\
-    {response.json()["server_start_time"]}'
+    if response.json()['status'] == "OK":
+        return f'Текущее время на сервере: {response.json()["current_time"]} \
+            \nКол-во сообщений: {response.json()["current_messages"]} \
+            \nВремя запуска сервера: {response.json()["server_start_time"]}\nКол-во пользователей:{response.json()["current_users"]}'
+    else:
+        return "Статус сервера на данный момент: " + response.json()["status"]
 
 
 commands = {
@@ -36,6 +39,8 @@ commands = {
 }
 
 if __name__ == "__main__":
+    print(commands['!статус']['action']())
+    exit()
     while True:
         inp = input().replace('\t', '').replace('\n', '')
         inp = [ch for ch in inp.split(' ') if ch]

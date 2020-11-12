@@ -50,19 +50,19 @@ def hello():
 def status():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        serv = cur.execute(f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchall()
-        messages_count = len(cur.execute(f"SELECT `server_id` FROM `messages` WHERE `server_id`={server_id};").fetchall())
+        serv = cur.execute(f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchone()
+        messages_count = len(cur.execute(f"SELECT `server_id` FROM `messages` WHERE `server_id`=1;").fetchall())
     return{
         'status': 'OK',
         'name': serv[0],
-        'server_start_time': serv[1],
+        'server_start_time': datetime.fromtimestamp(serv[1]).strftime('%H:%M:%S %d/%m/%Y'),
         'current_time': datetime.now().strftime('%H:%M:%S %d/%m/%Y'),
         'current_users': len(serv[2].split()),
         'current_messages': messages_count
     }
 
 @app.route("/create_server")
-def create_server:
+def create_server():
     pass
     '''
 Название сервера, дата запуска, админ
@@ -95,6 +95,8 @@ def login():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{password}';").fetchone():
+            cur.execute(f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
+            conn.commit()
             return {'ok': True}
         return {'invalidData': True}
 
@@ -110,9 +112,9 @@ def reg():
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{username}';").fetchone():
             return {'nameIsTaken': True}
         else:
-            cur.execute("INSERT INTO users(username, password) VALUES(?, ?);", (username, password))
+            cur.execute("INSERT INTO users(username, password, servers_id, isOnline) VALUES(?, ?, ?, ?);", (username, password, '1', 1))
             conn.commit()
-    return 'ok'
+    return {'ok': True}
 
 
 @app.route("/send_message")
