@@ -1,18 +1,23 @@
-from PyQt5 import QtWidgets
+﻿from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QPoint
+from Chat import Chat
 import AuthUI
 import requests
-from PyQt5.QtWidgets import QMessageBox
-from Chat import Chat
 import hashlib
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url='http://127.0.0.1:5000'):
         super().__init__()
-        self.setupUi(self) # Инициализация UI
-        self.__url = url # Создаём переменную, которая ссылается на адрес сервера
-        self.pushButton.pressed.connect(self.login) # Связываем событие нажатия на первую кнопку с функцией входа
-        self.pushButton_2.pressed.connect(self.registration) # Связываем событие нажатия на первую кнопку с функцией регистрации
+        self.setupUi(self)
+        self.oldPos = self.pos()
+        self.__url = url
+        self.loginButton.pressed.connect(self.login)
+        self.registrateButton.pressed.connect(self.registration)
+        self.exitButton.pressed.connect(self.close)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
     def removeSpaces(self, string):
         '''
@@ -33,29 +38,36 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         string = string.replace('\t', '')
         return string
 
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
 
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QPoint (event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+    
     def showError(self, text):
         '''
         Создаёт окно с ошибкой и выводим текст
         '''
         msg = QMessageBox()
+        msg.setWindowTitle("Ошибка")
         msg.setIcon(QMessageBox.Critical)
         msg.setText(text)
         msg.setWindowTitle("Error")
         msg.exec_()
 
-    def closeEvent(self, event):
-        self.close()
-        event.accept()
-
     def login(self):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
-        self._username = self.clearSpaces(self.lineEdit.text())
-        self.__password = self.removeSpaces(self.lineEdit_2.text())
+        self._username = self.clearSpaces(self.usernameText.text())
+        self.__password = self.removeSpaces(self.passwordText.text())
         response = requests.get(self.__url + '/login', # Передаём логин и пароль на сервер
                                 json={
                                     'username': self._username,
-                                    'password': hashlib.md5(self.__password.encode()).hexdigest()
+                                    'password': (self.__password)
                                 })
 
         if response.status_code == 200:
@@ -76,20 +88,20 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             return self.close()
 
     def registration(self):
-        self._username = " ".join(self.lineEdit.text().split())
-        self.__password = self.lineEdit_2.text()
+        self._username = " ".join(self.usernameText.text().split())
+        self.__password = self.passwordText.text()
         response = requests.get(self.__url + '/reg',
                                     json={
                                         'username': self._username,
-                                        'password': hashlib.md5(self.__password.encode()).hexdigest() })
+                                        'password': self.__password
+                                    })
         if response.status_code == 200:
-           
             if "isNotFilled" in response.json():
                     return self.showError("Не все поля заполнены")
 
             if "nameIsTaken" in response.json():
                     return self.showError("Данное имя пользователя уже занято")
-        
+            
             self.close() # Закрываем текущее окно
             self.main = Chat(self._username, self.__password, self.__url) # Инициализируем новое окно, передавая логин и пароль
             return self.main.show() # Открываем инициализированное окно
@@ -98,17 +110,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             self.showError("При попытке подключиться к серверу возникла ошибка")
             return self.close()
 
-### Ищем файл с урлом нашего сайта, если такого нет, то обращаемся к локалхосту ###
-if __name__ == "__main__":
-    try:
-        file = open('url.txt')
-        url = file.readline()
-        app = QtWidgets.QApplication([])
-        window = Auth(url)
-        window.show()
-        app.exec_()
-    except FileNotFoundError:
-        app = QtWidgets.QApplication([])
-        window = Auth()
-        window.show()
-        app.exec_()
+
+app = QtWidgets.QApplication([])
+window = Auth()
+window.show()
+app.exec_()

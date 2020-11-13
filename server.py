@@ -40,6 +40,8 @@ users = {
     }
 }
 
+def hash(text):
+    return hashlib.md5(text.encode()).hexdigest()
 
 @app.route("/")
 def hello():
@@ -101,7 +103,7 @@ def login():
         return {'isNotFilled': True}
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{password}';").fetchone():
+        if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash(password)}';").fetchone():
             cur.execute(
                 f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
             conn.commit()
@@ -121,7 +123,7 @@ def reg():
             return {'nameIsTaken': True}
         else:
             cur.execute("INSERT INTO users(username, password, servers_id, isOnline) VALUES(?, ?, ?, ?);",
-                        (username, password, '1', 1))
+                        (username, hash(password), '1', 1))
             conn.commit()
     return {'ok': True}
 
