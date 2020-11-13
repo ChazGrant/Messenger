@@ -50,8 +50,10 @@ def hello():
 def status():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        serv = cur.execute(f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchone()
-        messages_count = len(cur.execute(f"SELECT `server_id` FROM `messages` WHERE `server_id`=1;").fetchall())
+        serv = cur.execute(
+            f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchone()
+        messages_count = len(cur.execute(
+            f"SELECT `server_id` FROM `messages` WHERE `server_id`=1;").fetchall())
     return{
         'status': 'OK',
         'name': serv[0],
@@ -61,6 +63,7 @@ def status():
         'current_messages': messages_count
     }
 
+
 @app.route("/create_server")
 def create_server():
     pass
@@ -68,23 +71,27 @@ def create_server():
 Название сервера, дата запуска, админ
     '''
 
+
 @app.route("/connect")
 def connect():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         server_id = request.json['server_id']
         username = request.json['username']
-        users = cur.execute(f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
+        users = cur.execute(
+            f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
         for user in users:
             print(user)
         return {'ok': True}
         try:
-            cur.execute(f"UPDATE servers  SET `server_name` = `server_name` || '{username}' WHERE `server_id`='{server_id}';")
+            cur.execute(
+                f"UPDATE servers  SET `server_name` = `server_name` || '{username}' WHERE `server_id`='{server_id}';")
             conn.commit()
             print(cur.execute("SELECT * FROM servers;").fetchall())
         except Exception as e:
             return {"DB_Error": True}
     return {'ok': True}
+
 
 @app.route("/login")
 def login():
@@ -95,7 +102,8 @@ def login():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{password}';").fetchone():
-            cur.execute(f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
+            cur.execute(
+                f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
             conn.commit()
             return {'ok': True}
         return {'invalidData': True}
@@ -112,7 +120,8 @@ def reg():
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{username}';").fetchone():
             return {'nameIsTaken': True}
         else:
-            cur.execute("INSERT INTO users(username, password, servers_id, isOnline) VALUES(?, ?, ?, ?);", (username, password, '1', 1))
+            cur.execute("INSERT INTO users(username, password, servers_id, isOnline) VALUES(?, ?, ?, ?);",
+                        (username, password, '1', 1))
             conn.commit()
     return {'ok': True}
 
@@ -142,7 +151,7 @@ def send_message():
             if name in commands:
                 if arg is not None:
                     server_id = request.json["server_id"]
-                    
+
                     cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
                         "BOT", encrypt(commands[name]['action'](arg), 314), time.time(), server_id))
                 else:
@@ -150,7 +159,7 @@ def send_message():
                         "BOT", encrypt(commands[name]['action'](), 314), time.time(), server_id))
             else:
                 cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
-                        username, encrypt(text, 314), time.time(), server_id))
+                    username, encrypt(text, 314), time.time(), server_id))
         else:
             cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
                         username, encrypt(text, 314), time.time(), server_id))
@@ -166,13 +175,15 @@ def get_message():
         server_id = int(request.args['server_id'])
         try:
             if last_timestamps[server_id] >= after:
-                res = cur.execute(f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+                res = cur.execute(
+                    f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
                 return {'messages': res}
             else:
                 return {'messages': []}
         except:
             last_timestamps[server_id] = after
-            res = cur.execute(f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+            res = cur.execute(
+                f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
             return {'messages': res}
 
 
@@ -183,7 +194,8 @@ def get_users():
     with sq.connect("Messenger.db") as conn:
         server_id = request.json["server_id"]
         cur = conn.cursor()
-        res = cur.execute(f"SELECT username, isOnline FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+        res = cur.execute(
+            f"SELECT username, isOnline FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
     return {
         'res': res
     }
@@ -194,7 +206,8 @@ def disconnect():
     with sq.connect("Messenger.db") as conn:
         username = request.json['username']
         cur = conn.cursor()
-        cur.execute(f"UPDATE `users` SET `isOnline`=0 WHERE `username`='{username}';")
+        cur.execute(
+            f"UPDATE `users` SET `isOnline`=0 WHERE `username`='{username}';")
         conn.commit()
     return 'ok'
 

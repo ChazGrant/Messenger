@@ -44,6 +44,10 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         msg.setWindowTitle("Error")
         msg.exec_()
 
+    def closeEvent(self, event):
+        self.close()
+        event.accept()
+
     def login(self):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
         self._username = self.clearSpaces(self.lineEdit.text())
@@ -95,15 +99,16 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             return self.close()
 
 ### Ищем файл с урлом нашего сайта, если такого нет, то обращаемся к локалхосту ###
-try:
-    file = open('url.txt')
-    url = file.readline()
-    app = QtWidgets.QApplication([])
-    window = Auth(url)
-    window.show()
-    app.exec_()
-except FileNotFoundError:
-    app = QtWidgets.QApplication([])
-    window = Auth()
-    window.show()
-    app.exec_()
+if __name__ == "__main__":
+    try:
+        file = open('url.txt')
+        url = file.readline()
+        app = QtWidgets.QApplication([])
+        window = Auth(url)
+        window.show()
+        app.exec_()
+    except FileNotFoundError:
+        app = QtWidgets.QApplication([])
+        window = Auth()
+        window.show()
+        app.exec_()

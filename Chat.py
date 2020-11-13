@@ -76,7 +76,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 # 2 - время
                 ###
                 dt = datetime.datetime.fromtimestamp(
-                    message[2]).strftime('%H:%M:%S')
+                    message[2]).strftime('%H:%M')
                 
                 self.textBrowser.append(dt + " " +
                                         message[0] + ": " + decrypt(message[1], self.__key))
@@ -114,7 +114,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
 
     def disconnect(self):
-        response = requests.get(
+        return requests.get(
             self.__url + "/disconnect",
             json={
                 "username": self._username
