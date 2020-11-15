@@ -7,7 +7,7 @@ import datetime
 
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='Jack', password=1234, url='http://127.0.0.1:5000', server_id=1):
+    def __init__(self, username='Jack', url='http://127.0.0.1:5000', server_id=1):
         super().__init__()
         self.setupUi(self)
         self.pushButton.pressed.connect(self.send_message)
@@ -16,7 +16,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer.start(1000)
         self._timestamp = 0.0
         self._username = username
-        self._password = password
         self.__key = 314
         self.__url = url
         self.__server_id = server_id
