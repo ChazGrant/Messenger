@@ -5,7 +5,6 @@ import MainUI
 import requests
 import datetime
 
-knownUsers = []
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def __init__(self, username='Jack', password=1234, url='http://127.0.0.1:5000', server_id=1):
