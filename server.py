@@ -35,7 +35,6 @@ def status():
         'status': 'OK',
         'name': serv[0],
         'server_start_time': datetime.fromtimestamp(serv[1]).strftime('%H:%M:%S %d/%m/%Y'),
-        'current_time': datetime.now().strftime('%H:%M:%S %d/%m/%Y'),
         'current_users': len(serv[2].split()),
         'current_messages': messages_count
     }
@@ -145,6 +144,14 @@ def send_message():
 
     return {'ok': True}
 
+@app.route("/get_server_name")
+def get_server_name():
+    server_id = request.json['server_id']
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        server_name = cur.execute(f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+    return {'server_name': server_name}
+
 @app.route("/get_servers")
 def get_servers():
     with sq.connect("Messenger.db") as conn:
@@ -158,7 +165,7 @@ def get_servers():
             return {"someProblems": True}
 
 @app.route("/get_messages")
-def get_message():
+def get_messages():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         after = float(request.args['after'])

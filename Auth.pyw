@@ -11,13 +11,15 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url='http://127.0.0.1:5000'):
         super().__init__()
         self.setupUi(self)
-        self.oldPos = self.pos()
-        self.__url = url
+
         self.loginButton.pressed.connect(self.login)
         self.registrateButton.pressed.connect(self.registration)
         self.exitButton.pressed.connect(self.close)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.oldPos = self.pos()
+        self.__url = url
 
     def removeSpaces(self, string):
         '''

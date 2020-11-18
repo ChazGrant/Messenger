@@ -14,33 +14,94 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(564, 361)
+        MainWindow.resize(720, 498)
+        MainWindow.setStyleSheet("*{\n"
+"    font-family: century gothic;\n"
+"    font-size: 20px;\n"
+"}\n"
+"QMainWindow{\n"
+"    background-color: transparent;\n"
+"}\n"
+"QPushButton{\n"
+"    border-radius: 15px;\n"
+"    background: red;\n"
+"    color: white;\n"
+"}\n"
+"QPushButton:hover{\n"
+"    background: #333;\n"
+"    color: red;\n"
+"}\n"
+"\n"
+"#toolButton{\n"
+"    border-radius: 60px;\n"
+"    background: red;\n"
+"}\n"
+"QLabel{\n"
+"    color: white;\n"
+"}\n"
+"QFrame{\n"
+"    background: #333;\n"
+"    border-radius: 15px;\n"
+"}\n"
+"QLineEdit{\n"
+"    padding-bottom: 5px;\n"
+"    background: transparent;\n"
+"    border: none;\n"
+"    color: #717072;\n"
+"    border-bottom: 1px solid #717072;\n"
+"}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(160, 250, 101, 51))
-        self.pushButton.setObjectName("pushButton")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(10, -20, 301, 91))
-        font = QtGui.QFont()
-        font.setPointSize(20)
-        self.label.setFont(font)
-        self.label.setObjectName("label")
-        self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
-        self.textBrowser.setGeometry(QtCore.QRect(10, 50, 256, 192))
-        self.textBrowser.setObjectName("textBrowser")
-        self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
-        self.textEdit.setGeometry(QtCore.QRect(10, 250, 151, 51))
-        self.textEdit.setObjectName("textEdit")
-        self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(300, 30, 181, 16))
+        self.frame = QtWidgets.QFrame(self.centralwidget)
+        self.frame.setGeometry(QtCore.QRect(30, 20, 641, 391))
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.label_2 = QtWidgets.QLabel(self.frame)
+        self.label_2.setGeometry(QtCore.QRect(350, 0, 231, 71))
+        self.label_2.setWordWrap(True)
         self.label_2.setObjectName("label_2")
-        self.listWidget = QtWidgets.QListWidget(self.centralwidget)
-        self.listWidget.setGeometry(QtCore.QRect(300, 50, 256, 192))
-        self.listWidget.setObjectName("listWidget")
+        self.textBrowser = QtWidgets.QTextBrowser(self.frame)
+        self.textBrowser.setGeometry(QtCore.QRect(20, 70, 301, 192))
+        self.textBrowser.setStyleSheet("background-color: lightgrey;")
+        self.textBrowser.setObjectName("textBrowser")
+        self.sendButton = QtWidgets.QPushButton(self.frame)
+        self.sendButton.setGeometry(QtCore.QRect(240, 270, 111, 51))
+        self.sendButton.setObjectName("sendButton")
+        self.textEdit = QtWidgets.QTextEdit(self.frame)
+        self.textEdit.setGeometry(QtCore.QRect(20, 280, 201, 91))
+        self.textEdit.setStyleSheet("background-color: lightgrey;")
+        self.textEdit.setObjectName("textEdit")
+        self.serverNameLabel = QtWidgets.QLabel(self.frame)
+        self.serverNameLabel.setGeometry(QtCore.QRect(20, 10, 171, 51))
+        self.serverNameLabel.setText("")
+        self.serverNameLabel.setWordWrap(True)
+        self.serverNameLabel.setObjectName("serverNameLabel")
+        self.exitAccountButton = QtWidgets.QPushButton(self.frame)
+        self.exitAccountButton.setGeometry(QtCore.QRect(440, 270, 181, 51))
+        self.exitAccountButton.setObjectName("exitAccountButton")
+        self.disconnectButton = QtWidgets.QPushButton(self.frame)
+        self.disconnectButton.setGeometry(QtCore.QRect(440, 330, 181, 51))
+        self.disconnectButton.setObjectName("disconnectButton")
+        self.clearMessageButton = QtWidgets.QPushButton(self.frame)
+        self.clearMessageButton.setGeometry(QtCore.QRect(240, 330, 111, 51))
+        self.clearMessageButton.setObjectName("clearMessageButton")
+        self.searchButton = QtWidgets.QPushButton(self.frame)
+        self.searchButton.setGeometry(QtCore.QRect(200, 10, 111, 51))
+        self.searchButton.setObjectName("searchButton")
+        self.scrollArea = QtWidgets.QScrollArea(self.frame)
+        self.scrollArea.setGeometry(QtCore.QRect(350, 70, 271, 191))
+        self.scrollArea.setAutoFillBackground(False)
+        self.scrollArea.setStyleSheet("background-color: lightgrey;")
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        self.scrollAreaWidgetContents = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 271, 191))
+        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 564, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 720, 29))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -53,6 +114,9 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MyMessanger"))
-        self.pushButton.setText(_translate("MainWindow", "Отправить"))
-        self.label.setText(_translate("MainWindow", "Добро пожаловать"))
         self.label_2.setText(_translate("MainWindow", "Пользователи в данном чате"))
+        self.sendButton.setText(_translate("MainWindow", "Отправить"))
+        self.exitAccountButton.setText(_translate("MainWindow", "Выйти с аккаунта"))
+        self.disconnectButton.setText(_translate("MainWindow", "Выйти с сервера"))
+        self.clearMessageButton.setText(_translate("MainWindow", "Очистить"))
+        self.searchButton.setText(_translate("MainWindow", "Поиск"))

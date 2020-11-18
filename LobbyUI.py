@@ -14,27 +14,78 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(372, 296)
+        MainWindow.resize(756, 492)
+        MainWindow.setStyleSheet("*{\n"
+"    font-family: century gothic;\n"
+"    font-size: 20px;\n"
+"}\n"
+"#exitButton{\n"
+"    /*background-color: red;*/\n"
+"    border-radius: 15px;\n"
+"    background-size: 5px;\n"
+"}\n"
+"QMainWindow{\n"
+"    background-color: transparent;\n"
+"}\n"
+"#passwordText{\n"
+"    type: password;\n"
+"}\n"
+"QFrame{\n"
+"    background: #333;\n"
+"    border-radius: 15px;\n"
+"}\n"
+"QPushButton{\n"
+"    border-radius: 15px;\n"
+"    background: red;\n"
+"    color: white;\n"
+"}\n"
+"QPushButton:hover{\n"
+"    background: #333;\n"
+"    color: red;\n"
+"}\n"
+"#toolButton{\n"
+"    border-radius: 60px;\n"
+"    background: red;\n"
+"}\n"
+"QLabel{\n"
+"    color: white;\n"
+"}\n"
+"QLineEdit{\n"
+"    padding-bottom: 5px;\n"
+"    background: transparent;\n"
+"    border: none;\n"
+"    color: #717072;\n"
+"    border-bottom: 1px solid #717072;\n"
+"}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(10, 0, 281, 41))
+        self.frame = QtWidgets.QFrame(self.centralwidget)
+        self.frame.setGeometry(QtCore.QRect(10, 20, 531, 291))
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.label = QtWidgets.QLabel(self.frame)
+        self.label.setGeometry(QtCore.QRect(10, 0, 281, 51))
         self.label.setStyleSheet("font-size: 28px;")
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
-        self.updateButton = QtWidgets.QPushButton(self.centralwidget)
-        self.updateButton.setGeometry(QtCore.QRect(270, 50, 93, 28))
-        self.updateButton.setObjectName("updateButton")
-        self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
-        self.scrollArea.setGeometry(QtCore.QRect(10, 40, 231, 201))
+        self.scrollArea = QtWidgets.QScrollArea(self.frame)
+        self.scrollArea.setGeometry(QtCore.QRect(20, 50, 261, 201))
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 229, 199))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 261, 201))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.updateButton = QtWidgets.QPushButton(self.frame)
+        self.updateButton.setGeometry(QtCore.QRect(310, 20, 181, 41))
+        self.updateButton.setObjectName("updateButton")
+        self.logOffButton = QtWidgets.QPushButton(self.frame)
+        self.logOffButton.setGeometry(QtCore.QRect(310, 70, 181, 41))
+        self.logOffButton.setObjectName("logOffButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 372, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 756, 29))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -49,3 +100,4 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label.setText(_translate("MainWindow", "Список серверов"))
         self.updateButton.setText(_translate("MainWindow", "Обновить"))
+        self.logOffButton.setText(_translate("MainWindow", "Выйти с аккаунта"))
