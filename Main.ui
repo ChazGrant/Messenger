@@ -30,7 +30,9 @@ QPushButton:hover{
 	background: #333;
 	color: red;
 }
-
+#textBrowser{
+	font-size: 16px;
+}
 #toolButton{
 	border-radius: 60px;
 	background: red;
@@ -48,6 +50,11 @@ QLineEdit{
 	border: none;
 	color: #717072;
 	border-bottom: 1px solid #717072;
+}
+#exitButton{
+	/*background-color: red;*/
+	border-radius: 15px;
+	background-size: 5px;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -217,6 +224,29 @@ QLineEdit{
        </rect>
       </property>
      </widget>
+    </widget>
+    <widget class="QToolButton" name="exitButton">
+     <property name="geometry">
+      <rect>
+       <x>590</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>cross.png</normaloff>cross.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
+     </property>
     </widget>
    </widget>
   </widget>

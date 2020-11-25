@@ -15,6 +15,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(756, 492)
+        MainWindow.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
         MainWindow.setStyleSheet("*{\n"
 "    font-family: century gothic;\n"
 "    font-size: 20px;\n"
@@ -42,6 +43,10 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "    background: #333;\n"
 "    color: red;\n"
+"}\n"
+"QInputDialog{\n"
+"    width: 50px;\n"
+"    height: 50px;\n"
 "}\n"
 "#toolButton{\n"
 "    border-radius: 60px;\n"
@@ -78,11 +83,20 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.updateButton = QtWidgets.QPushButton(self.frame)
-        self.updateButton.setGeometry(QtCore.QRect(310, 20, 181, 41))
+        self.updateButton.setGeometry(QtCore.QRect(310, 50, 181, 41))
         self.updateButton.setObjectName("updateButton")
         self.logOffButton = QtWidgets.QPushButton(self.frame)
-        self.logOffButton.setGeometry(QtCore.QRect(310, 70, 181, 41))
+        self.logOffButton.setGeometry(QtCore.QRect(310, 100, 181, 41))
         self.logOffButton.setObjectName("logOffButton")
+        self.exitButton = QtWidgets.QToolButton(self.frame)
+        self.exitButton.setGeometry(QtCore.QRect(470, 10, 41, 31))
+        self.exitButton.setText("")
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("cross.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.exitButton.setIcon(icon)
+        self.exitButton.setShortcut("")
+        self.exitButton.setAutoRepeatDelay(300)
+        self.exitButton.setObjectName("exitButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 756, 29))

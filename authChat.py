@@ -20,6 +20,7 @@ def showError(text):
         msg.setWindowTitle("Error")
         msg.exec_()
 
+
 def removeSpaces(string):
         '''
         Удаляет все пустые символы в строке
@@ -123,8 +124,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         self.sendButton.pressed.connect(self.send_message)
         self.clearMessageButton.pressed.connect(lambda: self.textEdit.setText(""))
+        self.exitButton.pressed.connect(self.close)
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
+        self.searchButton.pressed.connect(self.search)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -150,6 +153,16 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         except:
             showError("При подключению к серверу возникли ошибки")
             return self.close()
+
+    def showMessage(self, text):
+        '''
+        Создаёт окно с ошибкой и выводим текст
+        '''
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle("Info")
+        msg.exec_()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -241,6 +254,28 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             showError("Ошибка в подключении к серверу")
             return self.close()
 
+    def search(self):
+        self.word, okPressed = QInputDialog.getText(self, "Get text","Введите сообщение для поиска:", QLineEdit.Normal, "")
+        self.result = []
+        if okPressed:
+            response = requests.get(
+                self.__url +'/get_messages',
+                params={
+                    'after': 0.0,
+                    'server_id': self.server_id
+                    })
+            if response.status_code == 200:
+                messages = response.json()['messages']
+                for message in messages:
+                    if self.word in decrypt(message[1], self.__key):
+                        dt = datetime.datetime.fromtimestamp(message[2]).strftime('%H:%M')
+                        self.result.append(dt + " " +
+                                        message[0] + ": " + decrypt(message[1], self.__key))
+            if (self.result):
+                return self.showMessage(str(self.result))
+            else:
+                return self.showMessage("Ваш запрос не выдал результатов(")
+
     def exit(self):
         return requests.get(
             self.__url + "/disconnect",
@@ -287,6 +322,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
         self.updateButton.pressed.connect(self.update)
         self.logOffButton.pressed.connect(self.logOff)
+        self.exitButton.pressed.connect(self.close)
+
         self.scrollArea.setAlignment(QtCore.Qt.AlignTop)
         self.scrollArea.setWidgetResizable(False)
 
@@ -329,7 +366,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.scrollArea.setWidget(w)
             
     def connect(self, id):
-        self.__serverPassword, okPressed = QInputDialog.getText(self, "Get text","Введите пароль:", QLineEdit.Normal, "")
+        self.__serverPassword, okPressed = QInputDialog.getText(self, "Get text","Введите пароль:", QLineEdit.Password, "")
         if okPressed:
             response = requests.get(self.__url + "/connect", 
                 json=
@@ -353,7 +390,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Auth()
-    #window.setFixedSize(720, 498)
+    window = Chat()
+    window.setFixedSize(720, 498)
     window.show()
     app.exec_()

@@ -10,6 +10,9 @@
     <height>492</height>
    </rect>
   </property>
+  <property name="cursor">
+   <cursorShape>ArrowCursor</cursorShape>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -41,6 +44,10 @@ QPushButton{
 QPushButton:hover{
 	background: #333;
 	color: red;
+}
+QInputDialog{
+	width: 50px;
+	height: 50px;
 }
 #toolButton{
 	border-radius: 60px;
@@ -119,7 +126,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>310</x>
-       <y>20</y>
+       <y>50</y>
        <width>181</width>
        <height>41</height>
       </rect>
@@ -132,13 +139,36 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>310</x>
-       <y>70</y>
+       <y>100</y>
        <width>181</width>
        <height>41</height>
       </rect>
      </property>
      <property name="text">
       <string>Выйти с аккаунта</string>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="exitButton">
+     <property name="geometry">
+      <rect>
+       <x>470</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>cross.png</normaloff>cross.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
      </property>
     </widget>
    </widget>

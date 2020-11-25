@@ -31,7 +31,9 @@ class Ui_MainWindow(object):
 "    background: #333;\n"
 "    color: red;\n"
 "}\n"
-"\n"
+"#textBrowser{\n"
+"    font-size: 16px;\n"
+"}\n"
 "#toolButton{\n"
 "    border-radius: 60px;\n"
 "    background: red;\n"
@@ -49,6 +51,11 @@ class Ui_MainWindow(object):
 "    border: none;\n"
 "    color: #717072;\n"
 "    border-bottom: 1px solid #717072;\n"
+"}\n"
+"#exitButton{\n"
+"    /*background-color: red;*/\n"
+"    border-radius: 15px;\n"
+"    background-size: 5px;\n"
 "}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -99,6 +106,15 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 271, 191))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.exitButton = QtWidgets.QToolButton(self.frame)
+        self.exitButton.setGeometry(QtCore.QRect(590, 10, 41, 31))
+        self.exitButton.setText("")
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("cross.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.exitButton.setIcon(icon)
+        self.exitButton.setShortcut("")
+        self.exitButton.setAutoRepeatDelay(300)
+        self.exitButton.setObjectName("exitButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 720, 29))
