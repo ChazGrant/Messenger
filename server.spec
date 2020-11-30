@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['server.py'],
-             pathex=['D:\\Sublime Text 3\\Projects\\Messenger'],
+             pathex=['E:\\Messenger'],
              binaries=[],
              datas=[],
              hiddenimports=[],

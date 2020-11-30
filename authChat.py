@@ -1,4 +1,5 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit
 from PyQt5.QtCore import QPoint
 import AuthUI
@@ -9,30 +10,31 @@ import hashlib
 import datetime
 from crypt import *
 
+
 def showError(text):
-        '''
-        Создаёт окно с ошибкой и выводим текст
-        '''
-        msg = QMessageBox()
-        msg.setWindowTitle("Ошибка")
-        msg.setIcon(QMessageBox.Critical)
-        msg.setText(text)
-        msg.setWindowTitle("Error")
-        msg.exec_()
+    '''
+    Создаёт окно с ошибкой и выводим текст
+    '''
+    msg = QMessageBox()
+    msg.setWindowTitle("Ошибка")
+    msg.setIcon(QMessageBox.Critical)
+    msg.setText(text)
+    msg.setWindowTitle("Error")
+    msg.exec_()
 
 
 def removeSpaces(string):
-        '''
-        Удаляет все пустые символы в строке
-        '''
-        for n in string:
-            string = string.lstrip(' ')
-            string = string.rstrip(' ')
-            string = string.lstrip('\n')
-            string = string.rstrip('\n')
-            string = string.rstrip('\t')
-            string = string.rstrip('\t')
-        return string
+    '''
+    Удаляет все пустые символы в строке
+    '''
+    for n in string:
+        string = string.lstrip(' ')
+        string = string.rstrip(' ')
+        string = string.lstrip('\n')
+        string = string.rstrip('\n')
+        string = string.rstrip('\t')
+        string = string.rstrip('\t')
+    return string
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
@@ -71,7 +73,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         response = requests.get(self.__url + '/login',  # Передаём логин и пароль на сервер
                                 json={
                                     'username': self.username,
-                                    'password': (self.__password)
+                                    'password': self.__password
                                 })
 
         if response.status_code == 200:
@@ -103,13 +105,16 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             if "isNotFilled" in response.json():
                 return showError("Не все поля заполнены")
 
+            if "badPassword" in response.json():
+                return showError("Пароль должен иметь специальные символы, буквы и цифры. Длина пароля от 8 до 16")
+
             if "nameIsTaken" in response.json():
                 return showError("Данное имя пользователя уже занято")
 
             self.close()  # Закрываем текущее окно
             # Инициализируем новое окно, передавая логин и пароль
             self.main = Lobby(self.username, self.__url)
-            return self.main.show() # Открываем инициализированное окно
+            return self.main.show()  # Открываем инициализированное окно
 
         else:
             showError(
@@ -123,7 +128,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.setupUi(self)
 
         self.sendButton.pressed.connect(self.send_message)
-        self.clearMessageButton.pressed.connect(lambda: self.textEdit.setText(""))
+        self.clearMessageButton.pressed.connect(
+            lambda: self.textEdit.setText(""))
         self.exitButton.pressed.connect(self.close)
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
@@ -134,19 +140,19 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         self.scrollArea.setAlignment(QtCore.Qt.AlignTop)
         self.scrollArea.setWidgetResizable(False)
-        
+
         self.oldPos = self.pos()
         self.timestamp = 0.0
         self.username = username
         self.__key = 314
         self.__url = url
         self.server_id = server_id
-        
+
         self.connect()
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
-        
+
     def connect(self):
         try:
             requests.get(self.__url + "/get_messages")
@@ -171,7 +177,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.oldPos = event.globalPos()
 
     def mouseMoveEvent(self, event):
-        delta = QPoint (event.globalPos() - self.oldPos)
+        delta = QPoint(event.globalPos() - self.oldPos)
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
@@ -183,9 +189,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def connect(self):
         try:
             response = requests.get(self.__url + "/get_server_name",
-            json = {
-                "server_id": self.server_id,
-            })
+                                    json={
+                                        "server_id": self.server_id,
+                                    })
             self.serverNameLabel.setText(response.json()['server_name'])
         except:
             showError("При попытке подключиться к серверу возникли ошибки")
@@ -193,11 +199,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def update(self):
         responseUsers = requests.get(
-                self.__url +'/get_users',
-                json=
-                {
-                    "server_id": self.server_id
-                })
+            self.__url + '/get_users',
+            json={
+                "server_id": self.server_id
+            })
         res = responseUsers.json()['res']
         self.users = QTextBrowser()
         for i in res:
@@ -205,23 +210,23 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.users.append(i[0] + f' ({status})')
         self.scrollArea.setWidget(self.users)
         response = requests.get(
-                self.__url +'/get_messages',
-                params={
-                    'after': self.timestamp,
-                    'server_id': self.server_id
-                    })
-                    
+            self.__url + '/get_messages',
+            params={
+                'after': self.timestamp,
+                'server_id': self.server_id
+            })
+
         if response.status_code == 200:
             messages = response.json()['messages']
             for message in messages:
-                ### 
-                # 0 - имя пользователя 
+                ###
+                # 0 - имя пользователя
                 # 1 - сообщение
                 # 2 - время
                 ###
                 dt = datetime.datetime.fromtimestamp(
                     message[2]).strftime('%H:%M')
-                
+
                 self.textBrowser.append(dt + " " +
                                         message[0] + ": " + decrypt(message[1], self.__key))
                 self.textBrowser.append("")
@@ -239,9 +244,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.__url + '/send_message',
             json={
                 'username': self.username,
-                'text': encrypt(text, self.__key), 
+                'text': encrypt(text, self.__key),
                 'server_id': self.server_id,
-                }
+            }
         )
         if response.status_code == 200:
             try:
@@ -255,22 +260,24 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def search(self):
-        self.word, okPressed = QInputDialog.getText(self, "Get text","Введите сообщение для поиска:", QLineEdit.Normal, "")
+        self.word, okPressed = QInputDialog.getText(
+            self, "Get text", "Введите сообщение для поиска:", QLineEdit.Normal, "")
         self.result = []
         if okPressed:
             response = requests.get(
-                self.__url +'/get_messages',
+                self.__url + '/get_messages',
                 params={
                     'after': 0.0,
                     'server_id': self.server_id
-                    })
+                })
             if response.status_code == 200:
                 messages = response.json()['messages']
                 for message in messages:
                     if self.word in decrypt(message[1], self.__key):
-                        dt = datetime.datetime.fromtimestamp(message[2]).strftime('%H:%M')
+                        dt = datetime.datetime.fromtimestamp(
+                            message[2]).strftime('%H:%M')
                         self.result.append(dt + " " +
-                                        message[0] + ": " + decrypt(message[1], self.__key))
+                                           message[0] + ": " + decrypt(message[1], self.__key))
             if (self.result):
                 return self.showMessage(str(self.result))
             else:
@@ -308,9 +315,12 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.main = Lobby(self.username)
         return self.main.show()
 
+
 '''
 Должна быть кнопка создать сервер
 '''
+
+
 class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def __init__(self, username='qwerty', url='http://127.0.0.1:5000'):
         super().__init__()
@@ -332,7 +342,6 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
         self.update()
 
-
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
 
@@ -340,7 +349,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.oldPos = event.globalPos()
 
     def mouseMoveEvent(self, event):
-        delta = QPoint (event.globalPos() - self.oldPos)
+        delta = QPoint(event.globalPos() - self.oldPos)
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
@@ -361,36 +370,37 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             button.setFixedSize(186, 30)
             button.pressed.connect(lambda: self.connect(res[0][0]))
             self.layout.addWidget(button)
-        w = Qt.QWidget()
-        w.setLayout(self.layout)
-        self.scrollArea.setWidget(w)
-            
+        widget = QWidget()
+        widget.setLayout(self.layout)
+        self.scrollArea.setWidget(widget)
+
     def connect(self, id):
-        self.__serverPassword, okPressed = QInputDialog.getText(self, "Get text","Введите пароль:", QLineEdit.Password, "")
+        self.__serverPassword, okPressed = QInputDialog.getText(
+            self, "Get text", "Введите пароль:", QLineEdit.Password, "")
         if okPressed:
-            response = requests.get(self.__url + "/connect", 
-                json=
-                {
-                    'username': self.username,
-                    'server_id': id,
-                    'password': self.__serverPassword
-                })
+            response = requests.get(self.__url + "/connect",
+                                    json={
+                                        'username': self.username,
+                                        'server_id': id,
+                                        'password': self.__serverPassword
+                                    })
             if response.status_code == 200:
                 if "badPassword" in response.json():
                     return showError("Неверный пароль")
 
                 if "someProblems" in response.json():
                     return showError("Беды с базой")
-                
+
                 self.close()
                 self.main = Chat(self.username, self.__url, id)
                 return self.main.show()
             else:
                 showError("Беды с сервером")
 
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Chat()
-    window.setFixedSize(720, 498)
+    window = Auth()
+    window.setFixedSize(490, 540)
     window.show()
     app.exec_()

@@ -2,7 +2,7 @@ from flask import Flask, request
 from datetime import datetime
 import hashlib
 import time
-# Удалить после релиза (и список messages сделать пустым)
+import re
 from crypt import *
 from bot import *
 import sqlite3 as sq
@@ -97,11 +97,21 @@ def reg():
         cur = conn.cursor()
         username = request.json['username']
         password = request.json['password']
+
+        # Минимум 1 символ, буквы или цифры. Длина пароля от 8 до 16
+        pattern = r"^(?=.*[\W].*)(?=.*[0-9].*)(?=.*[a-zA-Z].*)[0-9a-zA-Z\W_]{8,16}?$"
+        password = re.sub(r"[\s]+", "_", password)
+
         if username == "" or password == "":
             return {'isNotFilled': True}
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{username}';").fetchone():
             return {'nameIsTaken': True}
-    return {'ok': True}
+        if re.match(pattern, password):
+            cur.execute("INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash(password)))
+            conn.commit()
+            return {'ok': True}
+    return {"badPassword": True}
+    
 
 
 @app.route("/send_message")

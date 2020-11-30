@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>524</width>
-    <height>515</height>
+    <height>695</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,7 +64,7 @@ QLineEdit{
       <x>40</x>
       <y>100</y>
       <width>441</width>
-      <height>351</height>
+      <height>391</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -90,7 +90,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>230</y>
+       <y>250</y>
        <width>401</width>
        <height>41</height>
       </rect>
@@ -103,7 +103,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>290</y>
+       <y>310</y>
        <width>401</width>
        <height>41</height>
       </rect>

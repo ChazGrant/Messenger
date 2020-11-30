@@ -1,5 +1,4 @@
-import requests
-import time
+import re
+import sqlite3 as sq
 import hashlib
 
-print(hashlib.md5("password".encode()).hexdigest())

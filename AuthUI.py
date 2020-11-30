@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'beautyAuth.ui'
+# Form implementation generated from reading ui file 'Auth.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.1
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(524, 515)
+        MainWindow.resize(524, 695)
         MainWindow.setStyleSheet("*{\n"
 "    font-family: century gothic;\n"
 "    font-size: 20px;\n"
@@ -60,25 +60,25 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(40, 100, 441, 341))
+        self.frame.setGeometry(QtCore.QRect(40, 100, 441, 391))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.label = QtWidgets.QLabel(self.frame)
-        self.label.setGeometry(QtCore.QRect(150, 50, 151, 51))
+        self.label.setGeometry(QtCore.QRect(150, 60, 151, 51))
         self.label.setObjectName("label")
         self.loginButton = QtWidgets.QPushButton(self.frame)
-        self.loginButton.setGeometry(QtCore.QRect(20, 220, 401, 41))
+        self.loginButton.setGeometry(QtCore.QRect(20, 250, 401, 41))
         self.loginButton.setObjectName("loginButton")
         self.registrateButton = QtWidgets.QPushButton(self.frame)
-        self.registrateButton.setGeometry(QtCore.QRect(20, 280, 401, 41))
+        self.registrateButton.setGeometry(QtCore.QRect(20, 310, 401, 41))
         self.registrateButton.setObjectName("registrateButton")
         self.usernameText = QtWidgets.QLineEdit(self.frame)
         self.usernameText.setGeometry(QtCore.QRect(40, 131, 371, 31))
         self.usernameText.setText("")
         self.usernameText.setObjectName("usernameText")
         self.passwordText = QtWidgets.QLineEdit(self.frame)
-        self.passwordText.setGeometry(QtCore.QRect(40, 171, 371, 31))
+        self.passwordText.setGeometry(QtCore.QRect(40, 180, 371, 31))
         self.passwordText.setInputMask("")
         self.passwordText.setText("")
         self.passwordText.setEchoMode(QtWidgets.QLineEdit.Password)
@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.exitButton.setAutoRepeatDelay(300)
         self.exitButton.setObjectName("exitButton")
         self.toolButton = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton.setGeometry(QtCore.QRect(200, 20, 121, 121))
+        self.toolButton.setGeometry(QtCore.QRect(200, 40, 121, 121))
         self.toolButton.setText("")
         self.toolButton.setObjectName("toolButton")
         MainWindow.setCentralWidget(self.centralwidget)
