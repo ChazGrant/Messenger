@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>720</width>
-    <height>498</height>
+    <width>1299</width>
+    <height>683</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -55,16 +55,24 @@ QLineEdit{
 	/*background-color: red;*/
 	border-radius: 15px;
 	background-size: 5px;
+}
+#searchButton{
+	border-radius: 15px;
+	background-size: 5px;
+}
+#searchButton_2{
+	border-radius: 15px;
+	background-size: 5px;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>20</y>
-      <width>641</width>
-      <height>391</height>
+      <x>80</x>
+      <y>30</y>
+      <width>1171</width>
+      <height>591</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -76,7 +84,7 @@ QLineEdit{
     <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>900</x>
        <y>0</y>
        <width>231</width>
        <height>71</height>
@@ -94,8 +102,8 @@ QLineEdit{
       <rect>
        <x>20</x>
        <y>70</y>
-       <width>301</width>
-       <height>192</height>
+       <width>851</width>
+       <height>371</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -105,9 +113,9 @@ QLineEdit{
     <widget class="QPushButton" name="sendButton">
      <property name="geometry">
       <rect>
-       <x>240</x>
-       <y>270</y>
-       <width>111</width>
+       <x>580</x>
+       <y>460</y>
+       <width>121</width>
        <height>51</height>
       </rect>
      </property>
@@ -119,9 +127,9 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>280</y>
-       <width>201</width>
-       <height>91</height>
+       <y>460</y>
+       <width>551</width>
+       <height>111</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -131,9 +139,9 @@ QLineEdit{
     <widget class="QLabel" name="serverNameLabel">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>30</x>
        <y>10</y>
-       <width>171</width>
+       <width>511</width>
        <height>51</height>
       </rect>
      </property>
@@ -147,8 +155,8 @@ QLineEdit{
     <widget class="QPushButton" name="exitAccountButton">
      <property name="geometry">
       <rect>
-       <x>440</x>
-       <y>270</y>
+       <x>970</x>
+       <y>460</y>
        <width>181</width>
        <height>51</height>
       </rect>
@@ -160,8 +168,8 @@ QLineEdit{
     <widget class="QPushButton" name="disconnectButton">
      <property name="geometry">
       <rect>
-       <x>440</x>
-       <y>330</y>
+       <x>970</x>
+       <y>520</y>
        <width>181</width>
        <height>51</height>
       </rect>
@@ -173,9 +181,9 @@ QLineEdit{
     <widget class="QPushButton" name="clearMessageButton">
      <property name="geometry">
       <rect>
-       <x>240</x>
-       <y>330</y>
-       <width>111</width>
+       <x>580</x>
+       <y>520</y>
+       <width>121</width>
        <height>51</height>
       </rect>
      </property>
@@ -183,26 +191,13 @@ QLineEdit{
       <string>Очистить</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="searchButton">
-     <property name="geometry">
-      <rect>
-       <x>200</x>
-       <y>10</y>
-       <width>111</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Поиск</string>
-     </property>
-    </widget>
     <widget class="QScrollArea" name="scrollArea">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>900</x>
        <y>70</y>
-       <width>271</width>
-       <height>191</height>
+       <width>251</width>
+       <height>371</height>
       </rect>
      </property>
      <property name="autoFillBackground">
@@ -219,8 +214,8 @@ QLineEdit{
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>271</width>
-        <height>191</height>
+        <width>251</width>
+        <height>371</height>
        </rect>
       </property>
      </widget>
@@ -228,7 +223,7 @@ QLineEdit{
     <widget class="QToolButton" name="exitButton">
      <property name="geometry">
       <rect>
-       <x>590</x>
+       <x>1120</x>
        <y>10</y>
        <width>41</width>
        <height>31</height>
@@ -248,6 +243,19 @@ QLineEdit{
       <number>300</number>
      </property>
     </widget>
+    <widget class="QPushButton" name="searchButton">
+     <property name="geometry">
+      <rect>
+       <x>660</x>
+       <y>10</y>
+       <width>201</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Поиск</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -255,7 +263,7 @@ QLineEdit{
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>720</width>
+     <width>1299</width>
      <height>29</height>
     </rect>
    </property>

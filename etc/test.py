@@ -1,4 +1,6 @@
-import re
-import sqlite3 as sq
-import hashlib
+import requests
+
+req = requests.get("http://mezano.pythonanywhere.com/get_servers")
+
+print(req.json())
 

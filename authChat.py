@@ -152,6 +152,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
+        self.update()
 
     def connect(self):
         try:
@@ -218,19 +219,20 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         if response.status_code == 200:
             messages = response.json()['messages']
-            for message in messages:
-                ###
-                # 0 - имя пользователя
-                # 1 - сообщение
-                # 2 - время
-                ###
-                dt = datetime.datetime.fromtimestamp(
-                    message[2]).strftime('%H:%M')
+            if messages:
+                for message in messages:
+                    ###
+                    # 0 - имя пользователя
+                    # 1 - сообщение
+                    # 2 - время
+                    ###
+                    dt = datetime.datetime.fromtimestamp(
+                        message[2]).strftime('%H:%M')
 
-                self.textBrowser.append(dt + " " +
-                                        message[0] + ": " + decrypt(message[1], self.__key))
-                self.textBrowser.append("")
-                self.timestamp = message[2]
+                    self.textBrowser.append(dt + " " +
+                                            message[0] + ": " + decrypt(message[1], self.__key))
+                    self.textBrowser.append("")
+                    self.timestamp = message[2]
         else:
             showError(
                 "При попытке подключиться к серверу возникли ошибки")
@@ -400,7 +402,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Auth()
-    window.setFixedSize(490, 540)
+    window = Chat(url="http://Mezano.pythonanywhere.com")
+    #window.setFixedSize(490, 540)
     window.show()
     app.exec_()
