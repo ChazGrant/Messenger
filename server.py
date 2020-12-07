@@ -57,8 +57,8 @@ def connect():
             username = request.json['username']
             password = request.json['password']
             #f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
-            response = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()
-            if response[0] == hashlib.md5(password.encode()).hexdigest():
+            rightPassword = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
+            if rightPassword == hashlib.md5(password.encode()).hexdigest():
                 cur.execute(f"UPDATE `users` SET isOnline=1 WHERE username='{username}'")
                 servs_id = cur.execute(f"SELECT servers_id FROM `users` WHERE username='{username}'").fetchone()[0].split()
                 if str(server_id) not in servs_id:
