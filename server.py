@@ -51,6 +51,7 @@ def create_server():
 @app.route("/connect")
 def connect():
     with sq.connect("Messenger.db") as conn:
+<<<<<<< HEAD
         #try:
         cur = conn.cursor()
         server_id = request.json['server_id']
@@ -68,6 +69,20 @@ def connect():
             users = cur.execute(f"SELECT users FROM `servers` WHERE server_id='{server_id}';").fetchall()[0][0].split()
             if username not in users:
                     cur.execute(f"UPDATE `servers` SET users=users || ' ' || '{username}' WHERE server_id={server_id};")
+=======
+        try:
+            cur = conn.cursor()
+            server_id = request.json['server_id']
+            username = request.json['username']
+            password = request.json['password']
+            #f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
+            rightPassword = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
+            if rightPassword == hashlib.md5(password.encode()).hexdigest():
+                cur.execute(f"UPDATE `users` SET isOnline=1 WHERE username='{username}'")
+                servs_id = cur.execute(f"SELECT servers_id FROM `users` WHERE username='{username}'").fetchone()[0].split()
+                if str(server_id) not in servs_id:
+                    cur.execute(f"UPDATE `users` SET servers_id=servers_id || ' ' || {server_id} WHERE username='{username}';")
+>>>>>>> d510e929caec5790c3056a2e39c644289583b690
                     conn.commit()
         else:
             return {"badPassword": True}

@@ -76,11 +76,14 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url='http://127.0.0.1:5000'):
         super().__init__()
         self.setupUi(self)
+
         self.oldPos = self.pos()
         self.__url = url
+
         self.loginButton.pressed.connect(self.login)
         self.registrateButton.pressed.connect(self.registration)
         self.exitButton.pressed.connect(self.close)
+
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -158,13 +161,12 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='Jack', url='http://127.0.0.1:5000', server_id=1):
+    def __init__(self, username='qwerty', url='http://127.0.0.1:5000', server_id=1):
         super().__init__()
         self.setupUi(self)
 
         self.sendButton.pressed.connect(self.send_message)
-        self.clearMessageButton.pressed.connect(
-            lambda: self.textEdit.setText(""))
+        self.clearMessageButton.pressed.connect(lambda: self.textEdit.setText(""))
         self.exitButton.pressed.connect(self.close)
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
@@ -339,6 +341,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             }
         )
         self.close()
+        self.timer.stop()
         self.main = Auth()
         return self.main.show()
 
@@ -356,11 +359,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         return self.main.show()
 
 
+
 '''
 Должна быть кнопка создать сервер
 '''
-
-
 class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def __init__(self, username='qwerty', url='http://127.0.0.1:5000'):
         super().__init__()
@@ -440,7 +442,11 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
+<<<<<<< HEAD
     window = Chat(url="http://mezano.pythonanywhere.com")
+=======
+    window = Auth()
+>>>>>>> d510e929caec5790c3056a2e39c644289583b690
     #window.setFixedSize(490, 540)
     window.show()
     app.exec_()
