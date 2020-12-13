@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit
-from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QPoint, QThread, pyqtSignal
 import AuthUI
 import MainUI
 import LobbyUI
@@ -36,6 +36,41 @@ def removeSpaces(string):
         string = string.rstrip('\t')
     return string
 
+class LoadMessagesThread(QThread):
+    load_finished = pyqtSignal(object)
+
+    def __init__(self, url, ts, serv_id):
+        super().__init__()
+
+        self.url = url
+        self.timestamp = ts
+        self.server_id = serv_id
+
+    def run(self):
+        rs = requests.get(self.url, 
+        params={
+                'after': self.timestamp,
+                'server_id': self.server_id
+            })
+
+        self.load_finished.emit(rs)
+
+class LoadUsersThread(QThread):
+    load_finished = pyqtSignal(object)
+
+    def __init__(self, url, serv_id):
+        super().__init__()
+
+        self.url = url
+        self.server_id = serv_id
+
+    def run(self):
+        rs = requests.get(self.url,
+            json={
+                "server_id": self.server_id
+            })
+
+        self.load_finished.emit(rs)
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url='http://127.0.0.1:5000'):
@@ -198,27 +233,17 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             showError("При попытке подключиться к серверу возникли ошибки")
             return self.close()
 
-    def update(self):
-        responseUsers = requests.get(
-            self.__url + '/get_users',
-            json={
-                "server_id": self.server_id
-            })
-        res = responseUsers.json()['res']
+    def update_users(self, rs):
+        res = rs.json()['res']
         self.users = QTextBrowser()
         for i in res:
             status = "Online" if i[1] else "Offline"
             self.users.append(i[0] + f' ({status})')
         self.scrollArea.setWidget(self.users)
-        response = requests.get(
-            self.__url + '/get_messages',
-            params={
-                'after': self.timestamp,
-                'server_id': self.server_id
-            })
 
-        if response.status_code == 200:
-            messages = response.json()['messages']
+    def update_messages(self, rs):
+        if rs.status_code == 200:
+            messages = rs.json()['messages']
             if messages:
                 for message in messages:
                     ###
@@ -237,6 +262,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             showError(
                 "При попытке подключиться к серверу возникли ошибки")
             return self.close()
+
+    def update(self):
+        self.usersThread = LoadUsersThread(self.__url + "/get_users", self.server_id)
+        self.usersThread.load_finished.connect(self.update_users)
+        self.usersThread.finished.connect(self.usersThread.deleteLater)
+        self.usersThread.start()
+
+        self.msgThread = LoadMessagesThread(self.__url + "/get_messages", self.timestamp, self.server_id)
+        self.msgThread.load_finished.connect(self.update_messages)
+        self.msgThread.finished.connect(self.msgThread.deleteLater)
+        self.msgThread.start()
+        
 
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
@@ -314,6 +351,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             }
         )
         self.close()
+        self.timer.stop()
         self.main = Lobby(self.username)
         return self.main.show()
 
@@ -367,7 +405,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         res = request.json()['servers']
         self.layout = QVBoxLayout()
         print(res)
-        for i in range(10):
+        for _ in range(10):
             button = QPushButton(res[0][1], self)
             button.setFixedSize(186, 30)
             button.pressed.connect(lambda: self.connect(res[0][0]))
@@ -391,7 +429,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                     return showError("Неверный пароль")
 
                 if "someProblems" in response.json():
-                    return showError("Беды с базой")
+                    return showError(str(response.json()))
 
                 self.close()
                 self.main = Chat(self.username, self.__url, id)
@@ -402,7 +440,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Chat(url="http://Mezano.pythonanywhere.com")
+    window = Chat(url="http://mezano.pythonanywhere.com")
     #window.setFixedSize(490, 540)
     window.show()
     app.exec_()

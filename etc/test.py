@@ -1,6 +1,5 @@
 import requests
+import sqlite3 as sq
 
-req = requests.get("http://mezano.pythonanywhere.com/get_servers")
-
-print(req.json())
+with sq.connect("Messenger.db")
 
