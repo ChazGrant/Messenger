@@ -442,11 +442,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-<<<<<<< HEAD
     window = Chat(url="http://mezano.pythonanywhere.com")
-=======
-    window = Auth()
->>>>>>> d510e929caec5790c3056a2e39c644289583b690
     #window.setFixedSize(490, 540)
     window.show()
     app.exec_()
