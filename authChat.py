@@ -10,10 +10,14 @@ import hashlib
 import datetime
 from crypt import *
 
+URL = "http://mezano.pythonanywhere.com"
+URL = "http://127.0.0.1:5000"
+USERNAME = "qw"
+KEY = 314
 
 def showError(text):
     '''
-    Создаёт окно с ошибкой и выводим текст
+    Создаёт окно с ошибкой и выводит текст
     '''
     msg = QMessageBox()
     msg.setWindowTitle("Ошибка")
@@ -36,6 +40,8 @@ def removeSpaces(string):
         string = string.rstrip('\t')
     return string
 
+
+
 class LoadMessagesThread(QThread):
     load_finished = pyqtSignal(object)
 
@@ -55,6 +61,8 @@ class LoadMessagesThread(QThread):
 
         self.load_finished.emit(rs)
 
+
+
 class LoadUsersThread(QThread):
     load_finished = pyqtSignal(object)
 
@@ -72,8 +80,10 @@ class LoadUsersThread(QThread):
 
         self.load_finished.emit(rs)
 
+
+
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
-    def __init__(self, url='http://127.0.0.1:5000'):
+    def __init__(self, url=URL):
         super().__init__()
         self.setupUi(self)
 
@@ -96,9 +106,6 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
 
-    def mousePressEvent(self, event):
-        self.oldPos = event.globalPos()
-
     def mouseMoveEvent(self, event):
         delta = QPoint(event.globalPos() - self.oldPos)
         self.move(self.x() + delta.x(), self.y() + delta.y())
@@ -108,7 +115,9 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
         self.username = self.clearSpaces(self.usernameText.text())
         self.__password = removeSpaces(self.passwordText.text())
-        response = requests.get(self.__url + '/login',  # Передаём логин и пароль на сервер
+
+        # Передаём логин и пароль на сервер
+        response = requests.get(self.__url + '/login',  
                                 json={
                                     'username': self.username,
                                     'password': self.__password
@@ -126,7 +135,6 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             self.close()
             self.main = Lobby(self.username, self.__url)
             return self.main.show()
-
         else:
             showError("Ошибка в подключении к серверу")
             return self.close()
@@ -139,6 +147,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                                     'username': self.username,
                                     'password': self.__password
                                 })
+
         if response.status_code == 200:
             if "isNotFilled" in response.json():
                 return showError("Не все поля заполнены")
@@ -149,11 +158,11 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             if "nameIsTaken" in response.json():
                 return showError("Данное имя пользователя уже занято")
 
-            self.close()  # Закрываем текущее окно
-            # Инициализируем новое окно, передавая логин и пароль
+            # Закрываем текущее окно
+            self.close()
+            # Инициализируем новое окно, передавая логин и пароль и открываем его
             self.main = Lobby(self.username, self.__url)
-            return self.main.show()  # Открываем инициализированное окно
-
+            return self.main.show()
         else:
             showError(
                 "При попытке подключиться к серверу возникла ошибка")
@@ -161,7 +170,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
 
 class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
-    def __init__(self, username='qwerty', url='http://127.0.0.1:5000', server_id=1):
+    def __init__(self, username=USERNAME, url=URL, server_id=1):
         super().__init__()
         self.setupUi(self)
 
@@ -181,7 +190,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.oldPos = self.pos()
         self.timestamp = 0.0
         self.username = username
-        self.__key = 314
+        self.__key = KEY
         self.__url = url
         self.server_id = server_id
 
@@ -190,13 +199,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
         self.update()
-
-    def connect(self):
-        try:
-            requests.get(self.__url + "/get_messages")
-        except:
-            showError("При подключению к серверу возникли ошибки")
-            return self.close()
 
     def showMessage(self, text):
         '''
@@ -207,9 +209,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         msg.setText(text)
         msg.setWindowTitle("Info")
         msg.exec_()
-
-    def mousePressEvent(self, event):
-        self.oldPos = event.globalPos()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -276,7 +275,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.msgThread.finished.connect(self.msgThread.deleteLater)
         self.msgThread.start()
         
-
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
         if len(text) > 100:
@@ -355,7 +353,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         )
         self.close()
         self.timer.stop()
-        self.main = Lobby(self.username)
+        self.main = Lobby(self.username, self.__url)
         return self.main.show()
 
 
@@ -364,7 +362,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 Должна быть кнопка создать сервер
 '''
 class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
-    def __init__(self, username='qwerty', url='http://127.0.0.1:5000'):
+    def __init__(self, username=USERNAME, url=URL):
         super().__init__()
         self.setupUi(self)
 
@@ -375,6 +373,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.updateButton.pressed.connect(self.update)
         self.logOffButton.pressed.connect(self.logOff)
         self.exitButton.pressed.connect(self.close)
+        self.createServerButton.pressed.connect(self.createServer)
 
         self.scrollArea.setAlignment(QtCore.Qt.AlignTop)
         self.scrollArea.setWidgetResizable(False)
@@ -383,9 +382,6 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.update()
-
-    def mousePressEvent(self, event):
-        self.oldPos = event.globalPos()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -400,6 +396,25 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.main = Auth()
         return self.main.show()
 
+    def createServer(self):
+        while True:
+            serverName, okPressed = QInputDialog.getText(self, "Название сервера", "Введите название сервера:", QLineEdit.Normal, "")
+            if (okPressed):
+                if(serverName != ""):
+                    serverPassword, okPressed = QInputDialog.getText(self, "Пароль сервера", "Введите пароль для сервера(если не требуется - оставьте поле пустым):", QLineEdit.Password, "")
+                    res = requests.get(self.__url + "/create_server", json={
+                        "serverName": serverName,
+                        "serverPassword": serverPassword,
+                        "username": self.username
+                    })
+                    if ("someProblems" in res.json()):
+                        showError("Беды")
+                    break
+                else:
+                    showError("Название сервера не может быть пустым")
+            else:
+                break
+
     def update(self):
         request = requests.get(self.__url + "/get_servers")
         if "someProblems" in request.json():
@@ -407,10 +422,15 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         res = request.json()['servers']
         self.layout = QVBoxLayout()
         print(res)
-        for _ in range(10):
-            button = QPushButton(res[0][1], self)
+        # for _ in range(10):
+        #     button = QPushButton(res[0][1], self)
+        #     button.setFixedSize(186, 30)
+        #     button.pressed.connect(lambda: self.connect(res[0][0]))
+        #     self.layout.addWidget(button)
+        for i in res:
+            button = QPushButton(i[1], self)
             button.setFixedSize(186, 30)
-            button.pressed.connect(lambda: self.connect(res[0][0]))
+            button.pressed.connect(lambda: self.connect(i[0]))
             self.layout.addWidget(button)
         widget = QWidget()
         widget.setLayout(self.layout)
@@ -418,7 +438,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
     def connect(self, id):
         self.__serverPassword, okPressed = QInputDialog.getText(
-            self, "Get text", "Введите пароль:", QLineEdit.Password, "")
+            self, "Требуется пароль", "Введите пароль: ", QLineEdit.Password, "")
         if okPressed:
             response = requests.get(self.__url + "/connect",
                                     json={
@@ -440,9 +460,10 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                 showError("Беды с сервером")
 
 
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Chat(url="http://mezano.pythonanywhere.com")
+    window = Lobby()
     #window.setFixedSize(490, 540)
     window.show()
     app.exec_()

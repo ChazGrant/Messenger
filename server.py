@@ -42,7 +42,16 @@ def status():
 
 @app.route("/create_server")
 def create_server():
-    pass
+    servName = request.get_json()['serverName']
+    servPass = request.get_json()['serverPassword']
+    servAdmin = request.get_json()['username']
+    print(servName, servPass, servAdmin, sep="\n")
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)", (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
+        conn.commit()
+        return { "ok": True }
+    return { "someProblems": True }
     '''
 Название сервера, дата запуска, админ
     '''
@@ -51,44 +60,32 @@ def create_server():
 @app.route("/connect")
 def connect():
     with sq.connect("Messenger.db") as conn:
-<<<<<<< HEAD
-        #try:
-        cur = conn.cursor()
-        server_id = request.json['server_id']
-        username = request.json['username']
-        password = request.json['password']
-        #f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
-        response = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()
-        if response[0] == hashlib.md5(password.encode()).hexdigest():
-            print(username)
-            cur.execute(f"UPDATE `users` SET isOnline=1 WHERE username='{username}'")
-            servs_id = cur.execute(f"SELECT servers_id FROM `users` WHERE username='{username}'").fetchone()[0].split()
-            if str(server_id) not in servs_id:
-                cur.execute(f"UPDATE `users` SET servers_id=servers_id || ' ' || {server_id} WHERE username='{username}';")
-                conn.commit()
-            users = cur.execute(f"SELECT users FROM `servers` WHERE server_id='{server_id}';").fetchall()[0][0].split()
-            if username not in users:
-                    cur.execute(f"UPDATE `servers` SET users=users || ' ' || '{username}' WHERE server_id={server_id};")
-=======
         try:
             cur = conn.cursor()
             server_id = request.json['server_id']
             username = request.json['username']
             password = request.json['password']
-            #f"SELECT users FROM `servers` WHERE `server_id`='{server_id}'").fetchall()[0][0].split()
             rightPassword = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
             if rightPassword == hashlib.md5(password.encode()).hexdigest():
-                cur.execute(f"UPDATE `users` SET isOnline=1 WHERE username='{username}'")
-                servs_id = cur.execute(f"SELECT servers_id FROM `users` WHERE username='{username}'").fetchone()[0].split()
+                cur.execute(
+                    f"UPDATE `users` SET isOnline=1 WHERE username='{username}'")
+                servs_id = cur.execute(
+                    f"SELECT servers_id FROM `users` WHERE username='{username}'").fetchone()[0]
                 if str(server_id) not in servs_id:
-                    cur.execute(f"UPDATE `users` SET servers_id=servers_id || ' ' || {server_id} WHERE username='{username}';")
->>>>>>> d510e929caec5790c3056a2e39c644289583b690
+                    cur.execute(
+                        f"UPDATE `users` SET servers_id=servers_id || ' ' || {server_id} WHERE username='{username}';")
                     conn.commit()
-        else:
-            return {"badPassword": True}
-        #except Exception as e:
+                serv_users = cur.execute(
+                    f"SELECT `users` FROM servers WHERE `server_id` = {server_id};").fetchone()
+                if username not in serv_users:
+                    cur.execute(
+                        f"UPDATE `servers` SET users = users || ' ' || '{username}' WHERE `server_id` = {server_id};")
+                    conn.commit()
+            else:
+                return {"badPassword": True}
+        except Exception as e:
             return {"someProblems": str(e)}
-    return {'ok': True}
+    return {"ok": True}
 
 
 @app.route("/login")
@@ -128,7 +125,6 @@ def reg():
             return {'ok': True}
     return {"badPassword": True}
     
-
 
 @app.route("/send_message")
 def send_message():
@@ -170,6 +166,7 @@ def send_message():
 
     return {'ok': True}
 
+
 @app.route("/get_server_name")
 def get_server_name():
     server_id = request.json['server_id']
@@ -177,6 +174,7 @@ def get_server_name():
         cur = conn.cursor()
         server_name = cur.execute(f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
     return {'server_name': server_name}
+
 
 @app.route("/get_servers")
 def get_servers():
@@ -189,6 +187,7 @@ def get_servers():
                 }
         except:
             return {"someProblems": True}
+
 
 @app.route("/get_messages")
 def get_messages():
