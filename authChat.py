@@ -10,7 +10,7 @@ import hashlib
 import datetime
 from crypt import *
 
-URL = "http://mezano.pythonanywhere.com"
+# URL = "http://mezano.pythonanywhere.com"
 URL = "http://127.0.0.1:5000"
 USERNAME = "qw"
 KEY = 314
@@ -31,7 +31,7 @@ def removeSpaces(string):
     '''
     Удаляет все пустые символы в строке
     '''
-    for n in string:
+    for _ in string:
         string = string.lstrip(' ')
         string = string.rstrip(' ')
         string = string.lstrip('\n')
@@ -408,7 +408,10 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                         "username": self.username
                     })
                     if ("someProblems" in res.json()):
-                        showError("Беды")
+                        return showError("Беды")
+                    if ("nameIsTaken" in res.json()):
+                        return showError("Данное имя сервера занято")
+                    self.main = Chat(self.username, self.__url, res.json()['server_id'])
                     break
                 else:
                     showError("Название сервера не может быть пустым")

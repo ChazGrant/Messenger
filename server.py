@@ -45,9 +45,12 @@ def create_server():
     servName = request.get_json()['serverName']
     servPass = request.get_json()['serverPassword']
     servAdmin = request.get_json()['username']
-    print(servName, servPass, servAdmin, sep="\n")
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
+        serverNames = cur.execute("SELECT `server_name` FROM servers").fetchall()
+        for serverName in serverNames:
+            if servName in serverName:
+                return { "nameIsTaken": True}
         cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)", (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
         conn.commit()
         return { "ok": True }
