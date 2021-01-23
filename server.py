@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from datetime import datetime
 import hashlib
 import time
@@ -6,6 +6,8 @@ import re
 from crypt import *
 from bot import *
 import sqlite3 as sq
+import os
+import zipfile
 
 conn = sq.connect("Messenger.db")
 cur = conn.cursor()
@@ -17,6 +19,7 @@ last_timestamps = dict()
 
 def hash(text):
     return hashlib.md5(text.encode()).hexdigest()
+
 
 @app.route("/")
 def hello():
@@ -47,14 +50,16 @@ def create_server():
     servAdmin = request.get_json()['username']
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        serverNames = cur.execute("SELECT `server_name` FROM servers").fetchall()
+        serverNames = cur.execute(
+            "SELECT `server_name` FROM servers").fetchall()
         for serverName in serverNames:
             if servName in serverName:
-                return { "nameIsTaken": True }
-        cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)", (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
+                return {"nameIsTaken": True}
+        cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
+                    (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
         conn.commit()
-        return { "ok": True }
-    return { "someProblems": True }
+        return {"ok": True}
+    return {"someProblems": True}
     '''
 Название сервера, дата запуска, админ
     '''
@@ -68,7 +73,8 @@ def connect():
             server_id = request.json['server_id']
             username = request.json['username']
             password = request.json['password']
-            rightPassword = cur.execute(f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
+            rightPassword = cur.execute(
+                f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
             if rightPassword == hashlib.md5(password.encode()).hexdigest():
                 cur.execute(
                     f"UPDATE `users` SET isOnline=1 WHERE username='{ username }'")
@@ -85,9 +91,9 @@ def connect():
                         f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
                     conn.commit()
             else:
-                return { "badPassword": True }
+                return {"badPassword": True}
         except:
-            return { "someProblems": True }
+            return {"someProblems": True}
     return {"ok": True}
 
 
@@ -96,15 +102,15 @@ def login():
     username = request.json['username']
     password = request.json['password']
     if username == "" or password == "":
-        return { 'isNotFilled': True }
+        return {'isNotFilled': True}
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash(password)}';").fetchone():
             cur.execute(
                 f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
             conn.commit()
-            return { 'ok': True }
-        return { 'invalidData': True }
+            return {'ok': True}
+        return {'invalidData': True}
 
 
 @app.route("/reg")
@@ -119,15 +125,16 @@ def reg():
         password = re.sub(r"[\s]+", "_", password)
 
         if username == "" or password == "":
-            return { 'isNotFilled': True }
+            return {'isNotFilled': True}
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{ username }';").fetchone():
-            return { 'nameIsTaken': True }
+            return {'nameIsTaken': True}
         if re.match(pattern, password):
-            cur.execute("INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash(password)))
+            cur.execute(
+                "INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash(password)))
             conn.commit()
-            return { 'ok': True }
-    return { "badPassword": True }
-    
+            return {'ok': True}
+    return {"badPassword": True}
+
 
 @app.route("/send_message")
 def send_message():
@@ -136,7 +143,7 @@ def send_message():
     server_id = request.json['server_id']
 
     if text == "":
-        return { "blankMessage": True }
+        return {"blankMessage": True}
 
     last_timestamps[server_id] = time.time()
 
@@ -175,8 +182,9 @@ def get_server_name():
     server_id = request.json['server_id']
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        server_name = cur.execute(f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
-    return { 'server_name': server_name }
+        server_name = cur.execute(
+            f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+    return {'server_name': server_name}
 
 
 @app.route("/get_servers")
@@ -187,9 +195,44 @@ def get_servers():
             servers = cur.execute("SELECT * FROM `servers`").fetchall()
             return {
                 "servers": servers
-                }
+            }
         except:
             return {"someProblems": True}
+
+
+@app.route("/upload")
+def upload():
+    data = request.data
+    filename = request.args['filename']
+
+    files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    for file in files:
+        if file == filename:
+            return {"nameIsTaken": True}
+    with open(r"static/" + filename, "wb+") as file:
+        file.write(data)
+    return {"ok": True}
+
+# Можно вернуть либо один файл, либо архивом несколько
+@app.route("/download")
+def download():
+
+    neededFile = request.get_json()["neededFile"]
+
+    returnedFiles = list()
+
+    filesList = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+
+    for file in filesList:
+        if neededFile == file:
+            return send_from_directory(directory="static/", filename=file, as_attachment=True)
+
+
+
+@app.route("/get_files")
+def get_files():
+    files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    return {"allFiles": files}
 
 
 @app.route("/get_messages")
@@ -204,18 +247,18 @@ def get_messages():
                     f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
                 return {
                     'messages': res
-                    }
+                }
             else:
                 return {
                     'messages': []
-                    }
+                }
         except:
             last_timestamps[server_id] = after
             res = cur.execute(
                 f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
             return {
                 'messages': res
-                }
+            }
 
 
 @app.route("/get_users")

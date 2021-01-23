@@ -7,7 +7,7 @@ with open("Загрузки/" + filename, "rb") as file:
     content = file.read()
 
     res = requests.get("http://127.0.0.1:5000/upload", data=content, params={
-        "name": filename
+        "name": "fff.xlsx"
     })
 
     if "nameIsTaken" in res.json():

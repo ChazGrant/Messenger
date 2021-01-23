@@ -23,7 +23,7 @@ def download():
 
 @app.route("/upload")
 def upload():
-    filename = request.args['name']
+    filename = request.args['filename']
     data = request.data
 
 

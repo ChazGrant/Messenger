@@ -15,6 +15,7 @@ URL = "http://127.0.0.1:5000"
 USERNAME = "qw"
 KEY = 314
 
+
 def showError(text):
     '''
     Создаёт окно с ошибкой и выводит текст
@@ -41,7 +42,6 @@ def removeSpaces(string):
     return string
 
 
-
 class LoadMessagesThread(QThread):
     load_finished = pyqtSignal(object)
 
@@ -53,14 +53,13 @@ class LoadMessagesThread(QThread):
         self.server_id = serv_id
 
     def run(self):
-        rs = requests.get(self.url, 
-        params={
-                'after': self.timestamp,
-                'server_id': self.server_id
-            })
+        rs = requests.get(self.url,
+                          params={
+                              'after': self.timestamp,
+                              'server_id': self.server_id
+                          })
 
         self.load_finished.emit(rs)
-
 
 
 class LoadUsersThread(QThread):
@@ -74,12 +73,11 @@ class LoadUsersThread(QThread):
 
     def run(self):
         rs = requests.get(self.url,
-            json={
-                "server_id": self.server_id
-            })
+                          json={
+                              "server_id": self.server_id
+                          })
 
         self.load_finished.emit(rs)
-
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
@@ -117,7 +115,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.__password = removeSpaces(self.passwordText.text())
 
         # Передаём логин и пароль на сервер
-        response = requests.get(self.__url + '/login',  
+        response = requests.get(self.__url + '/login',
                                 json={
                                     'username': self.username,
                                     'password': self.__password
@@ -175,7 +173,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.setupUi(self)
 
         self.sendButton.pressed.connect(self.send_message)
-        self.clearMessageButton.pressed.connect(lambda: self.textEdit.setText(""))
+        self.clearMessageButton.pressed.connect(
+            lambda: self.textEdit.setText(""))
         self.exitButton.pressed.connect(self.close)
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
@@ -265,16 +264,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def update(self):
-        self.usersThread = LoadUsersThread(self.__url + "/get_users", self.server_id)
+        self.usersThread = LoadUsersThread(
+            self.__url + "/get_users", self.server_id)
         self.usersThread.load_finished.connect(self.update_users)
         self.usersThread.finished.connect(self.usersThread.deleteLater)
         self.usersThread.start()
 
-        self.msgThread = LoadMessagesThread(self.__url + "/get_messages", self.timestamp, self.server_id)
+        self.msgThread = LoadMessagesThread(
+            self.__url + "/get_messages", self.timestamp, self.server_id)
         self.msgThread.load_finished.connect(self.update_messages)
         self.msgThread.finished.connect(self.msgThread.deleteLater)
         self.msgThread.start()
-        
+
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
         if len(text) > 100:
@@ -357,10 +358,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         return self.main.show()
 
 
-
 '''
 Должна быть кнопка создать сервер
 '''
+
+
 class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def __init__(self, username=USERNAME, url=URL):
         super().__init__()
@@ -374,6 +376,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.logOffButton.pressed.connect(self.logOff)
         self.exitButton.pressed.connect(self.close)
         self.createServerButton.pressed.connect(self.createServer)
+        self.downloadButton.pressed.connect(self.download)
+        self.uploadButton.pressed.connect(self.upload)
 
         self.scrollArea.setAlignment(QtCore.Qt.AlignTop)
         self.scrollArea.setWidgetResizable(False)
@@ -396,12 +400,34 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.main = Auth()
         return self.main.show()
 
+    def download(self):
+        pass
+
+    def upload(self):
+        frame = QtWidgets.QFileDialog()
+        frame.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        if frame.exec_():
+            fileNames = frame.selectedFiles()
+            fileName, okPressed = QInputDialog.getText(
+                self, "Название файла", "Введите новое название файла: ", QLineEdit.Normal, "")
+            if okPressed:
+                if fileName == "":
+                    fileName = fileNames[0].split("/")[-1]
+                with open(fileNames[0], "rb") as file:
+                    upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                        "filename": fileName,
+                    })
+                if "nameIstaken" in upl.json():
+                    return showError("Данное имя файла заянято")
+
     def createServer(self):
         while True:
-            serverName, okPressed = QInputDialog.getText(self, "Название сервера", "Введите название сервера:", QLineEdit.Normal, "")
+            serverName, okPressed = QInputDialog.getText(
+                self, "Название сервера", "Введите название сервера:", QLineEdit.Normal, "")
             if (okPressed):
                 if(serverName != ""):
-                    serverPassword, okPressed = QInputDialog.getText(self, "Пароль сервера", "Введите пароль для сервера(если не требуется - оставьте поле пустым):", QLineEdit.Password, "")
+                    serverPassword, okPressed = QInputDialog.getText(
+                        self, "Пароль сервера", "Введите пароль для сервера(если не требуется - оставьте поле пустым):", QLineEdit.Password, "")
                     res = requests.get(self.__url + "/create_server", json={
                         "serverName": serverName,
                         "serverPassword": serverPassword,
@@ -411,7 +437,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                         return showError("Беды")
                     if ("nameIsTaken" in res.json()):
                         return showError("Данное имя сервера занято")
-                    self.main = Chat(self.username, self.__url, res.json()['server_id'])
+                    self.main = Chat(self.username, self.__url,
+                                     res.json()['server_id'])
                     break
                 else:
                     showError("Название сервера не может быть пустым")
@@ -424,12 +451,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             return showError("Проблемы с сервером")
         res = request.json()['servers']
         self.layout = QVBoxLayout()
-        print(res)
-        # for _ in range(10):
-        #     button = QPushButton(res[0][1], self)
-        #     button.setFixedSize(186, 30)
-        #     button.pressed.connect(lambda: self.connect(res[0][0]))
-        #     self.layout.addWidget(button)
+
         for i in res:
             button = QPushButton(i[1], self)
             button.setFixedSize(186, 30)
@@ -463,10 +485,9 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                 showError("Беды с сервером")
 
 
-
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Lobby()
-    #window.setFixedSize(490, 540)
+    window = Chat()
+    # window.setFixedSize(490, 540)
     window.show()
     app.exec_()
