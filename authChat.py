@@ -1,18 +1,20 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit
+from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel
 from PyQt5.QtCore import QPoint, QThread, pyqtSignal
 import AuthUI
 import MainUI
 import LobbyUI
+import downloadUI
 import requests
 import hashlib
 import datetime
+import os
 from crypt import *
 
 # URL = "http://mezano.pythonanywhere.com"
 URL = "http://127.0.0.1:5000"
-USERNAME = "qwerty"
+USERNAME = "123"
 KEY = 314
 
 
@@ -53,13 +55,17 @@ class LoadMessagesThread(QThread):
         self.server_id = serv_id
 
     def run(self):
-        rs = requests.get(self.url,
+        try:
+            rs = requests.get(self.url,
                           params={
                               'after': self.timestamp,
                               'server_id': self.server_id
                           })
-
-        self.load_finished.emit(rs)
+        except:
+            print("Беды")
+            rs = False
+        finally:
+            self.load_finished.emit(rs)
 
 
 class LoadUsersThread(QThread):
@@ -72,12 +78,16 @@ class LoadUsersThread(QThread):
         self.server_id = serv_id
 
     def run(self):
-        rs = requests.get(self.url,
+        try:
+            rs = requests.get(self.url,
                           json={
                               "server_id": self.server_id
                           })
-
-        self.load_finished.emit(rs)
+        except:
+            print("Беды")
+            rs = False
+        finally:
+            self.load_finished.emit(rs)
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
@@ -236,14 +246,28 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def update_users(self, rs):
-        res = rs.json()['res']
-        self.users = QTextBrowser()
-        for i in res:
-            status = "Online" if i[1] else "Offline"
-            self.users.append(i[0] + f' ({status})')
-        self.scrollArea.setWidget(self.users)
+        try:
+            rs.status_code
+        except AttributeError:
+            return self.close()
+
+        if rs.status_code == 200:
+            res = rs.json()['res']
+            self.users = QTextBrowser()
+            for i in res:
+                status = "Online" if i[1] else "Offline"
+                self.users.append(i[0] + f' ({status})')
+            self.scrollArea.setWidget(self.users)
+        else:
+            showError("Возникли неполадки с сервером")
+            return self.close()
 
     def update_messages(self, rs):
+        try:
+            rs.status_code
+        except AttributeError:
+            return self.close()
+    
         if rs.status_code == 200:
             messages = rs.json()['messages']
             if messages:
@@ -277,17 +301,21 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def update(self):
         if not self.isSearchEnabled:
-            self.usersThread = LoadUsersThread(
-                self.__url + "/get_users", self.server_id)
-            self.usersThread.load_finished.connect(self.update_users)
-            self.usersThread.finished.connect(self.usersThread.deleteLater)
-            self.usersThread.start()
+            try:
+                self.usersThread = LoadUsersThread(
+                    self.__url + "/get_users", self.server_id)
+                self.usersThread.load_finished.connect(self.update_users)
+                self.usersThread.finished.connect(self.usersThread.deleteLater)
+                self.usersThread.start()
 
-            self.msgThread = LoadMessagesThread(
-                self.__url + "/get_messages", self.timestamp, self.server_id)
-            self.msgThread.load_finished.connect(self.update_messages)
-            self.msgThread.finished.connect(self.msgThread.deleteLater)
-            self.msgThread.start()
+                self.msgThread = LoadMessagesThread(
+                    self.__url + "/get_messages", self.timestamp, self.server_id)
+                self.msgThread.load_finished.connect(self.update_messages)
+                self.msgThread.finished.connect(self.msgThread.deleteLater)
+                self.msgThread.start()
+            except:
+                showError("Вознилки неполадки")
+                return self.close()
 
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
@@ -438,7 +466,11 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         return self.main.show()
 
     def download(self):
-        pass
+        resp = requests.get(URL + "/get_files")
+        if resp.status_code == 200:
+            allFiles = resp.json()['allFiles']
+            self.main = downloadHub(allFiles)
+            self.main.show()
 
     def upload(self):
         frame = QtWidgets.QFileDialog()
@@ -487,12 +519,15 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         if "someProblems" in request.json():
             return showError("Проблемы с сервером")
         res = request.json()['servers']
+
         self.layout = QVBoxLayout()
+        buttons = list()
 
         for i in res:
             button = QPushButton(i[1], self)
             button.setFixedSize(186, 30)
-            button.pressed.connect(lambda: self.connect(i[0]))
+            button.pressed.connect(lambda key=i[0]: self.connect(key))
+            buttons.append(button)
             self.layout.addWidget(button)
         widget = QWidget()
         widget.setLayout(self.layout)
@@ -506,7 +541,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                                     json={
                                         'server_id': id,
                                         'username': self.username,
-                                        'password': self.__serverPassword
+                                        'password': hashlib.md5(self.__serverPassword.encode()).hexdigest()
                                     })
             if response.status_code == 200:
                 if "badPassword" in response.json():
@@ -521,10 +556,76 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             else:
                 showError("Беды с сервером")
 
+class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
+    def __init__(self, items):
+        super().__init__()
+        self.setupUi(self)
+        self.items = items
+        self.isCancelled = False
+
+        self.browser = QtWidgets.QTextBrowser()
+        # self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
+
+        self.selectButton.pressed.connect(
+            self.download)
+
+        for i in items:
+            self.listWidget.addItem(i)
+
+    def showMessage(self, text):
+        '''
+        Создаёт окно с ошибкой и выводим текст
+        '''
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle("Info")
+        msg.exec_()
+
+    def download(self):
+        neededFiles = list()
+
+        for item in self.listWidget.selectedItems():
+            neededFiles.append(item.text())
+
+        resp = requests.get(URL + "/download", json={
+            "neededFile": neededFiles[0]
+        })
+
+        filesList = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
+
+        for file in filesList:
+            if neededFiles[0] == file:
+                self.dial = QDialog(self)
+                label = QLabel(
+                    text="Данный файл уже скачан\nВы уверены, что хотите перезаписать данные?")
+                accept = QPushButton(text="Да")
+                decline = QPushButton(text="Нет")
+
+                accept.pressed.connect(lambda: self.dial.close())
+                decline.pressed.connect(lambda: self.decline())
+
+                self.dial.setLayout(QVBoxLayout())
+                self.dial.layout().addWidget(label)
+                self.dial.layout().addWidget(accept)
+                self.dial.layout().addWidget(decline)
+                self.dial.setFixedSize(310, 150)
+                self.dial.exec_()
+
+        if not self.isCancelled:
+            with open("Загрузки/" + str(neededFiles[0]), "wb") as file:
+                file.write(resp.content)
+            self.showMessage("Ваш файл был успешно скачан")
+        self.isCancelled = False
+
+    def decline(self):
+        self.dial.close()
+        self.isCancelled = True
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Chat()
+    window = Lobby()
     # window.setFixedSize(490, 540)
     window.show()
     app.exec_()

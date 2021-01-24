@@ -58,7 +58,10 @@ def create_server():
         cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
                     (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
         conn.commit()
-        return {"ok": True}
+
+        server_id = cur.execute(f"SELECT server_id FROM `servers` WHERE `server_name` LIKE '%{servName}%'").fetchone()
+
+        return {"server_id": server_id}
     return {"someProblems": True}
     '''
 Название сервера, дата запуска, админ
@@ -74,12 +77,10 @@ def connect():
         username = request.json['username']
         password = request.json['password']
 
-
         rightPassword = cur.execute(
             f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
-        print(rightPassword)
-        print(hashlib.md5(password.encode()).hexdigest())
-        if rightPassword == hashlib.md5(password.encode()).hexdigest():
+
+        if rightPassword == password:
             cur.execute(
                 f"UPDATE `users` SET isOnline=1 WHERE username='{ username }'")
             servs_id = cur.execute(
@@ -89,7 +90,8 @@ def connect():
                     f"UPDATE `users` SET servers_id=servers_id || ' ' || { server_id } WHERE username='{username}';")
                 conn.commit()
             serv_users = cur.execute(
-                f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()
+                f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()[0]
+
             if username not in serv_users:
                 cur.execute(
                     f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
