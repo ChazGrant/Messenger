@@ -141,7 +141,7 @@ QLineEdit{
       <rect>
        <x>30</x>
        <y>10</y>
-       <width>511</width>
+       <width>401</width>
        <height>51</height>
       </rect>
      </property>
@@ -254,6 +254,19 @@ QLineEdit{
      </property>
      <property name="text">
       <string>Поиск</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="abortSearchButton">
+     <property name="geometry">
+      <rect>
+       <x>450</x>
+       <y>10</y>
+       <width>201</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Сбросить поиск</string>
      </property>
     </widget>
    </widget>

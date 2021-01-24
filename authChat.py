@@ -12,7 +12,7 @@ from crypt import *
 
 # URL = "http://mezano.pythonanywhere.com"
 URL = "http://127.0.0.1:5000"
-USERNAME = "qw"
+USERNAME = "qwerty"
 KEY = 314
 
 
@@ -179,6 +179,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
         self.searchButton.pressed.connect(self.search)
+        self.abortSearchButton.pressed.connect(self.abortSearch)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -192,6 +193,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
+        self.isSearchEnabled = False
 
         self.connect()
         self.timer = QtCore.QTimer()
@@ -254,8 +256,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     dt = datetime.datetime.fromtimestamp(
                         message[2]).strftime('%H:%M')
 
-                    self.textBrowser.append(dt + " " +
-                                            message[0] + ": " + decrypt(message[1], self.__key))
+                    if message[0] == self.username:
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                    else:
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+
+                    # if len(message[1]) > 50:
+                    #     self.textBrowser.append("<b>" + dt + " " +
+                    #                             message[0] + "</b><br> " + decrypt(message[1][:50], self.__key) + "<br>" + decrypt(message[1][50:], self.__key))
+                    # else:
+                    self.textBrowser.append("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
+
                     self.textBrowser.append("")
                     self.timestamp = message[2]
         else:
@@ -264,17 +276,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def update(self):
-        self.usersThread = LoadUsersThread(
-            self.__url + "/get_users", self.server_id)
-        self.usersThread.load_finished.connect(self.update_users)
-        self.usersThread.finished.connect(self.usersThread.deleteLater)
-        self.usersThread.start()
+        if not self.isSearchEnabled:
+            self.usersThread = LoadUsersThread(
+                self.__url + "/get_users", self.server_id)
+            self.usersThread.load_finished.connect(self.update_users)
+            self.usersThread.finished.connect(self.usersThread.deleteLater)
+            self.usersThread.start()
 
-        self.msgThread = LoadMessagesThread(
-            self.__url + "/get_messages", self.timestamp, self.server_id)
-        self.msgThread.load_finished.connect(self.update_messages)
-        self.msgThread.finished.connect(self.msgThread.deleteLater)
-        self.msgThread.start()
+            self.msgThread = LoadMessagesThread(
+                self.__url + "/get_messages", self.timestamp, self.server_id)
+            self.msgThread.load_finished.connect(self.update_messages)
+            self.msgThread.finished.connect(self.msgThread.deleteLater)
+            self.msgThread.start()
 
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
@@ -301,8 +314,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def search(self):
         self.word, okPressed = QInputDialog.getText(
-            self, "Get text", "Введите сообщение для поиска:", QLineEdit.Normal, "")
-        self.result = []
+            self, "Поиск", "Введите сообщение для поиска:", QLineEdit.Normal, "")
+
+        self.result = ""
+        self.previousMessages = []
+
         if okPressed:
             response = requests.get(
                 self.__url + '/get_messages',
@@ -310,18 +326,39 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     'after': 0.0,
                     'server_id': self.server_id
                 })
+
             if response.status_code == 200:
                 messages = response.json()['messages']
                 for message in messages:
-                    if self.word in decrypt(message[1], self.__key):
-                        dt = datetime.datetime.fromtimestamp(
+                    dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
-                        self.result.append(dt + " " +
-                                           message[0] + ": " + decrypt(message[1], self.__key))
-            if (self.result):
-                return self.showMessage(str(self.result))
+                    if self.word in decrypt(message[1], self.__key):
+                        self.result += ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
+                    if not self.isSearchEnabled:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                        self.previousMessages.append(self.dict)
+                print(self.previousMessages)
+
+                if (self.result):
+                    self.textBrowser.clear()
+                    self.isSearchEnabled = True
+                    return self.textBrowser.append(self.result)
+                else:
+                    return self.showMessage("Ваш запрос не выдал результатов(")
+
+    def abortSearch(self):
+        self.textBrowser.clear()
+        for msg in self.previousMessages:
+            if (msg['username'] == self.username):
+                self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
             else:
-                return self.showMessage("Ваш запрос не выдал результатов(")
+                self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+            self.textBrowser.append(msg["message"])
+            self.textBrowser.append("")
+        self.isSearchEnabled = False
 
     def exit(self):
         return requests.get(
@@ -467,8 +504,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         if okPressed:
             response = requests.get(self.__url + "/connect",
                                     json={
-                                        'username': self.username,
                                         'server_id': id,
+                                        'username': self.username,
                                         'password': self.__serverPassword
                                     })
             if response.status_code == 200:

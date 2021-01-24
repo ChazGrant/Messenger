@@ -68,32 +68,36 @@ def create_server():
 @app.route("/connect")
 def connect():
     with sq.connect("Messenger.db") as conn:
-        try:
-            cur = conn.cursor()
-            server_id = request.json['server_id']
-            username = request.json['username']
-            password = request.json['password']
-            rightPassword = cur.execute(
-                f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
-            if rightPassword == hashlib.md5(password.encode()).hexdigest():
+        # try:
+        cur = conn.cursor()
+        server_id = request.json['server_id']
+        username = request.json['username']
+        password = request.json['password']
+
+
+        rightPassword = cur.execute(
+            f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
+        print(rightPassword)
+        print(hashlib.md5(password.encode()).hexdigest())
+        if rightPassword == hashlib.md5(password.encode()).hexdigest():
+            cur.execute(
+                f"UPDATE `users` SET isOnline=1 WHERE username='{ username }'")
+            servs_id = cur.execute(
+                f"SELECT servers_id FROM `users` WHERE username='{ username }'").fetchone()[0]
+            if str(server_id) not in servs_id:
                 cur.execute(
-                    f"UPDATE `users` SET isOnline=1 WHERE username='{ username }'")
-                servs_id = cur.execute(
-                    f"SELECT servers_id FROM `users` WHERE username='{ username }'").fetchone()[0]
-                if str(server_id) not in servs_id:
-                    cur.execute(
-                        f"UPDATE `users` SET servers_id=servers_id || ' ' || { server_id } WHERE username='{username}';")
-                    conn.commit()
-                serv_users = cur.execute(
-                    f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()
-                if username not in serv_users:
-                    cur.execute(
-                        f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
-                    conn.commit()
-            else:
-                return {"badPassword": True}
-        except:
-            return {"someProblems": True}
+                    f"UPDATE `users` SET servers_id=servers_id || ' ' || { server_id } WHERE username='{username}';")
+                conn.commit()
+            serv_users = cur.execute(
+                f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()
+            if username not in serv_users:
+                cur.execute(
+                    f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
+                conn.commit()
+        else:
+            return {"badPassword": True}
+        # except Exception as e:
+        #     return {"someProblems": str(e)}
     return {"ok": True}
 
 
