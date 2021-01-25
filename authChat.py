@@ -14,7 +14,8 @@ from crypt import *
 
 # URL = "http://mezano.pythonanywhere.com"
 URL = "http://127.0.0.1:5000"
-USERNAME = "123"
+URL = "http://mezano.pythonanywhere.com/"
+USERNAME = "Jack"
 KEY = 314
 
 
@@ -344,7 +345,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.word, okPressed = QInputDialog.getText(
             self, "Поиск", "Введите сообщение для поиска:", QLineEdit.Normal, "")
 
-        self.result = ""
+        self.result = []
         self.previousMessages = []
 
         if okPressed:
@@ -360,32 +361,43 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 for message in messages:
                     dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
+                    if message[0] == "Jack":
+                        print(decrypt(message[1], self.__key))
                     if self.word in decrypt(message[1], self.__key):
-                        self.result += ("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                        self.result.append(self.dict)
                     if not self.isSearchEnabled:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
                                                 message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
                         self.previousMessages.append(self.dict)
-                print(self.previousMessages)
+
 
                 if (self.result):
                     self.textBrowser.clear()
                     self.isSearchEnabled = True
-                    return self.textBrowser.append(self.result)
+                    for searchedMessage in self.result:
+                        if (searchedMessage['username'] == self.username):
+                            self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                        else:
+                            self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+                        self.textBrowser.append(searchedMessage["message"])
+                        self.textBrowser.append("")
                 else:
                     return self.showMessage("Ваш запрос не выдал результатов(")
 
     def abortSearch(self):
-        self.textBrowser.clear()
-        for msg in self.previousMessages:
-            if (msg['username'] == self.username):
-                self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
-            else:
-                self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
-            self.textBrowser.append(msg["message"])
-            self.textBrowser.append("")
+        if self.isSearchEnabled:
+            self.textBrowser.clear()
+            for msg in self.previousMessages:
+                if (msg['username'] == self.username):
+                    self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                else:
+                    self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+                self.textBrowser.append(msg["message"])
+                self.textBrowser.append("")
         self.isSearchEnabled = False
 
     def exit(self):
@@ -625,7 +637,7 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = Lobby()
+    window = Chat()
     # window.setFixedSize(490, 540)
     window.show()
     app.exec_()
