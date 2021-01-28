@@ -1,22 +1,23 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel
+from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel, QFrame, QAbstractItemView
 from PyQt5.QtCore import QPoint, QThread, pyqtSignal
 import AuthUI
 import MainUI
 import LobbyUI
 import downloadUI
+import searchFormUI
 import requests
 import hashlib
 import datetime
+import time
 import os
 from crypt import *
 
-# URL = "http://mezano.pythonanywhere.com"
 URL = "http://127.0.0.1:5000"
-URL = "http://mezano.pythonanywhere.com/"
 USERNAME = "Jack"
 KEY = 314
+WORD_FOR_SEARCH = ""
 
 
 def showError(text):
@@ -201,10 +202,13 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.oldPos = self.pos()
         self.timestamp = 0.0
         self.username = username
+        self.previousMessages = []
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
         self.isSearchEnabled = False
+        self.currentUsers = []
+        self.isNotInUsers = False
 
         self.connect()
         self.timer = QtCore.QTimer()
@@ -255,10 +259,33 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if rs.status_code == 200:
             res = rs.json()['res']
             self.users = QTextBrowser()
+
+            # Протестить
             for i in res:
-                status = "Online" if i[1] else "Offline"
-                self.users.append(i[0] + f' ({status})')
-            self.scrollArea.setWidget(self.users)
+                if i[0] not in self.currentUsers:
+                    self.currentUsers.append(i[0])
+                    self.isNotInUsers = True
+            if self.isNotInUsers:
+                for i in res:
+                    lastTimeSeen = datetime.datetime.fromtimestamp(i[2])
+                    currentTime = datetime.datetime.fromtimestamp(time.time())
+                    if (currentTime.year > lastTimeSeen.year):
+                        if (currentTime.day > lastTimeSeen.day) and (currentTime.month == lastTimeSeen.month):
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                        elif (currentTime.month > lastTimeSeen.month):
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                        else:
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                    else:
+                        if (currentTime.day > lastTimeSeen.day) and (currentTime.month == lastTimeSeen.month):
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
+                        elif (currentTime.month > lastTimeSeen.month):
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
+                        else:
+                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M')}"
+                    self.users.append(i[0] + f' ({status})')
+                self.isNotInUsers = False
+                self.scrollArea.setWidget(self.users)
         else:
             showError("Возникли неполадки с сервером")
             return self.close()
@@ -271,6 +298,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     
         if rs.status_code == 200:
             messages = rs.json()['messages']
+            previousMessageDate = 0
             if messages:
                 for message in messages:
                     ###
@@ -278,8 +306,38 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     # 1 - сообщение
                     # 2 - время
                     ###
+
                     dt = datetime.datetime.fromtimestamp(
                         message[2]).strftime('%H:%M')
+
+                    messageDate = datetime.datetime.fromtimestamp(
+                        message[2])
+                    
+
+                    if not previousMessageDate:
+                        previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>Начало переписки</b>")
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+                    
+                    if previousMessageDate.year < messageDate.year:
+                        previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+
+                    elif previousMessageDate.month < messageDate.month:
+                        previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+                    
+                    elif previousMessageDate.month == messageDate.month and previousMessageDate.day < messageDate.day:
+                        previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
 
                     if message[0] == self.username:
                         self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
@@ -342,13 +400,17 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
     def search(self):
-        self.word, okPressed = QInputDialog.getText(
-            self, "Поиск", "Введите сообщение для поиска:", QLineEdit.Normal, "")
-
+        self.sForm = searchForm()
+        self.sForm.show()
+        
+        self.sForm.closeDialog.connect(lambda: self.find(self.sForm.text, self.sForm.checkBox.isChecked(), self.sForm.checkBox_2.isChecked()))
+        
+    def find(self, text, nameIsChecked, msgIsChecked):
+        self.word = text
         self.result = []
-        self.previousMessages = []
 
-        if okPressed:
+
+        if self.word:
             response = requests.get(
                 self.__url + '/get_messages',
                 params={
@@ -361,13 +423,17 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 for message in messages:
                     dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
-                    if message[0] == "Jack":
-                        print(decrypt(message[1], self.__key))
-                    if self.word in decrypt(message[1], self.__key):
+                    if self.word in message[0] and nameIsChecked:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
                                                 message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
                         self.result.append(self.dict)
+                    elif self.word in decrypt(message[1], self.__key) and msgIsChecked:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                        self.result.append(self.dict)
+
                     if not self.isSearchEnabled:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
@@ -398,7 +464,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
                 self.textBrowser.append(msg["message"])
                 self.textBrowser.append("")
-        self.isSearchEnabled = False
+            self.isSearchEnabled = False
 
     def exit(self):
         return requests.get(
@@ -568,6 +634,39 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             else:
                 showError("Беды с сервером")
 
+
+class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
+    closeDialog = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        
+        self.oldPos = self.pos()
+        self.checkBox.setChecked(True)
+
+        self.text = ""
+
+        self.searchButton.pressed.connect(self.setText)
+        self.cancelButton.pressed.connect(self.close)
+        self.exitButton.pressed.connect(self.close)
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+    def setText(self):
+        self.text = self.textEdit.toPlainText()
+        self.closeDialog.emit()
+        self.close()
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+
 class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
     def __init__(self, items):
         super().__init__()
@@ -576,7 +675,7 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.isCancelled = False
 
         self.browser = QtWidgets.QTextBrowser()
-        # self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
 
         self.selectButton.pressed.connect(
             self.download)
@@ -600,35 +699,37 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         for item in self.listWidget.selectedItems():
             neededFiles.append(item.text())
 
-        resp = requests.get(URL + "/download", json={
-            "neededFile": neededFiles[0]
-        })
+        for neededFile in neededFiles:
+            
+            resp = requests.get(URL + "/download", json={
+                "neededFile": neededFile
+            })
 
-        filesList = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
+            filesList = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
 
-        for file in filesList:
-            if neededFiles[0] == file:
-                self.dial = QDialog(self)
-                label = QLabel(
-                    text="Данный файл уже скачан\nВы уверены, что хотите перезаписать данные?")
-                accept = QPushButton(text="Да")
-                decline = QPushButton(text="Нет")
+            for file in filesList:
+                if neededFile == file:
+                    self.dial = QDialog(self)
+                    label = QLabel(
+                        text=f"{file} уже скачан\nВы уверены, что хотите перезаписать данные?")
+                    accept = QPushButton(text="Да")
+                    decline = QPushButton(text="Нет")
 
-                accept.pressed.connect(lambda: self.dial.close())
-                decline.pressed.connect(lambda: self.decline())
+                    accept.pressed.connect(lambda: self.dial.close())
+                    decline.pressed.connect(lambda: self.decline())
 
-                self.dial.setLayout(QVBoxLayout())
-                self.dial.layout().addWidget(label)
-                self.dial.layout().addWidget(accept)
-                self.dial.layout().addWidget(decline)
-                self.dial.setFixedSize(310, 150)
-                self.dial.exec_()
+                    self.dial.setLayout(QVBoxLayout())
+                    self.dial.layout().addWidget(label)
+                    self.dial.layout().addWidget(accept)
+                    self.dial.layout().addWidget(decline)
+                    self.dial.setFixedSize(310, 150)
+                    self.dial.exec_()
 
-        if not self.isCancelled:
-            with open("Загрузки/" + str(neededFiles[0]), "wb") as file:
-                file.write(resp.content)
-            self.showMessage("Ваш файл был успешно скачан")
-        self.isCancelled = False
+            if not self.isCancelled:
+                with open("Загрузки/" + str(neededFiles[0]), "wb") as file:
+                    file.write(resp.content)
+                self.showMessage("Ваш файл был успешно скачан")
+            self.isCancelled = False
 
     def decline(self):
         self.dial.close()
@@ -636,6 +737,11 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
 
 if __name__ == "__main__":
+    try:
+        with open("url.txt", "r") as file:
+            URL = file.read()
+    except:
+        pass
     app = QtWidgets.QApplication([])
     window = Chat()
     # window.setFixedSize(490, 540)

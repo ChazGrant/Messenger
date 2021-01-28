@@ -275,7 +275,8 @@ def get_users():
         server_id = request.json["server_id"]
         cur = conn.cursor()
         res = cur.execute(
-            f"SELECT username, isOnline FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+            f"SELECT username, isOnline, lastSeen FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+        res = sorted(res, key=lambda tup: tup[1], reverse=True)
     return {
         'res': res
     }
