@@ -16,6 +16,7 @@ app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 last_timestamps = dict()
 
+userIsLoggedIn = dict()
 
 def hash(text):
     return hashlib.md5(text.encode()).hexdigest()
@@ -100,6 +101,7 @@ def connect():
             return {"badPassword": True}
         # except Exception as e:
         #     return {"someProblems": str(e)}
+    userIsLoggedIn[server_id] = True
     return {"ok": True}
 
 
@@ -277,9 +279,17 @@ def get_users():
         res = cur.execute(
             f"SELECT username, isOnline, lastSeen FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
         res = sorted(res, key=lambda tup: tup[1], reverse=True)
-    return {
-        'res': res
-    }
+        try:
+            return {
+                'res': res,
+                'userIsLoggedIn': userIsLoggedIn[server_id]
+            }
+        except:
+            return {
+                'res': res,
+                'userIsLoggedIn': 0
+            }
+    
 
 
 @app.route("/disconnect")
@@ -288,7 +298,7 @@ def disconnect():
         username = request.json['username']
         cur = conn.cursor()
         cur.execute(
-            f"UPDATE `users` SET `isOnline`=0 WHERE `username`='{ username }';")
+            f"UPDATE `users` SET `isOnline`=0, `lastSeen`={time.time()} WHERE `username`='{ username }';")
         conn.commit()
     return 'ok'
 

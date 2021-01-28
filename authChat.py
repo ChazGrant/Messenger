@@ -15,7 +15,7 @@ import os
 from crypt import *
 
 URL = "http://127.0.0.1:5000"
-USERNAME = "Jack"
+USERNAME = "qwerty"
 KEY = 314
 WORD_FOR_SEARCH = ""
 
@@ -258,6 +258,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         if rs.status_code == 200:
             res = rs.json()['res']
+            isLogged = rs.json()['userIsLoggedIn']
             self.users = QTextBrowser()
 
             # Протестить
@@ -265,7 +266,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 if i[0] not in self.currentUsers:
                     self.currentUsers.append(i[0])
                     self.isNotInUsers = True
-            if self.isNotInUsers:
+            if self.isNotInUsers or isLogged:
                 for i in res:
                     lastTimeSeen = datetime.datetime.fromtimestamp(i[2])
                     currentTime = datetime.datetime.fromtimestamp(time.time())

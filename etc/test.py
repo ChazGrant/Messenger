@@ -18,6 +18,7 @@ import hashlib
 #             f"DELETE FROM `servers` WHERE server_id = 4;")
 #         conn.commit()
 
+print(hashlib.md5("".encode()).hexdigest())
 currentDate = datetime.datetime.fromtimestamp(time.time())
 print(time.time())
 print(currentDate.year)
