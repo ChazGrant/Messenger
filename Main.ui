@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1299</width>
-    <height>683</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -155,9 +155,9 @@ QLineEdit{
     <widget class="QPushButton" name="exitAccountButton">
      <property name="geometry">
       <rect>
-       <x>970</x>
+       <x>960</x>
        <y>460</y>
-       <width>181</width>
+       <width>191</width>
        <height>51</height>
       </rect>
      </property>
@@ -168,9 +168,9 @@ QLineEdit{
     <widget class="QPushButton" name="disconnectButton">
      <property name="geometry">
       <rect>
-       <x>970</x>
+       <x>960</x>
        <y>520</y>
-       <width>181</width>
+       <width>191</width>
        <height>51</height>
       </rect>
      </property>
@@ -197,7 +197,7 @@ QLineEdit{
        <x>900</x>
        <y>70</y>
        <width>251</width>
-       <height>371</height>
+       <height>301</height>
       </rect>
      </property>
      <property name="autoFillBackground">
@@ -215,7 +215,7 @@ QLineEdit{
         <x>0</x>
         <y>0</y>
         <width>251</width>
-        <height>371</height>
+        <height>301</height>
        </rect>
       </property>
      </widget>
@@ -267,6 +267,61 @@ QLineEdit{
      </property>
      <property name="text">
       <string>Сбросить поиск</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="isOnline">
+     <property name="geometry">
+      <rect>
+       <x>900</x>
+       <y>390</y>
+       <width>111</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Онлайн</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="isOffline">
+     <property name="geometry">
+      <rect>
+       <x>1010</x>
+       <y>390</y>
+       <width>151</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Оффлайн</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="uploadButton">
+     <property name="geometry">
+      <rect>
+       <x>710</x>
+       <y>520</y>
+       <width>191</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Загрузить файлы</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="downloadButton">
+     <property name="geometry">
+      <rect>
+       <x>710</x>
+       <y>460</y>
+       <width>191</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Скачать файлы</string>
      </property>
     </widget>
    </widget>

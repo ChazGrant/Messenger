@@ -4,6 +4,7 @@ import re
 import datetime
 import time
 import hashlib
+import os
 
 
 
@@ -12,17 +13,28 @@ import hashlib
 #     if re.match(pattern, passw):
 #         print("OK")
 
-# with sq.connect("../Messenger.db") as conn:
-#         cur = conn.cursor()
-#         cur.execute(
-#             f"DELETE FROM `servers` WHERE server_id = 4;")
-#         conn.commit()
+print(os.getcwd())
 
-print(hashlib.md5("".encode()).hexdigest())
-currentDate = datetime.datetime.fromtimestamp(time.time())
-print(time.time())
-print(currentDate.year)
+filesList = [f for _, _, f in os.walk(os.getcwd() + "/static" + "/JUST TALKING")][0]
 
-firstDate = datetime.datetime.fromtimestamp(time.time())
-secondDate = datetime.datetime.fromtimestamp(time.time() + 15)
-print(firstDate.month)
+
+print(filesList)
+with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        print(cur.execute(
+            f"SELECT `server_name` FROM servers WHERE `server_id` = 1").fetchone()[0])
+exit()
+f = [1,5,6,2]
+
+j = [5,4]
+
+print(f+j)
+
+# print(hashlib.md5("".encode()).hexdigest())
+# currentDate = datetime.datetime.fromtimestamp(time.time())
+# print(time.time())
+# print(currentDate.year)
+
+# firstDate = datetime.datetime.fromtimestamp(time.time())
+# secondDate = datetime.datetime.fromtimestamp(time.time() + 15)
+# print(firstDate.month)

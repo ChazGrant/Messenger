@@ -192,6 +192,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.exitAccountButton.pressed.connect(self.logOff)
         self.searchButton.pressed.connect(self.search)
         self.abortSearchButton.pressed.connect(self.abortSearch)
+        self.downloadButton.pressed.connect(self.download)
+        self.uploadButton.pressed.connect(self.upload)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -239,6 +241,35 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.exit()
         event.accept()
 
+    def download(self):
+        resp = requests.get(self.__url + "/get_files", json={
+            "server_id": self.server_id
+        })
+
+        hub = downloadHub(resp.json()["allFiles"])
+        if resp.status_code == 200:
+            allFiles = resp.json()['allFiles']
+            self.main = downloadHub(allFiles)
+            self.main.show()
+
+    def upload(self):
+        frame = QtWidgets.QFileDialog()
+        frame.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        if frame.exec_():
+            fileNames = frame.selectedFiles()
+            fileName, okPressed = QInputDialog.getText(
+                self, "Название файла", "Введите новое название файла: ", QLineEdit.Normal, "")
+            if okPressed:
+                if fileName == "":
+                    fileName = fileNames[0].split("/")[-1]
+                with open(fileNames[0], "rb") as file:
+                    upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                        "filename": fileName,
+                        "server_id": self.server_id
+                    })
+                if "nameIstaken" in upl.json():
+                    return showError("Данное имя файла заянято")
+
     def connect(self):
         try:
             response = requests.get(self.__url + "/get_server_name",
@@ -267,6 +298,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.currentUsers.append(i[0])
                     self.isNotInUsers = True
             if self.isNotInUsers or isLogged:
+                onlineUsers = list()
+                offlineUsers = list()
                 for i in res:
                     lastTimeSeen = datetime.datetime.fromtimestamp(i[2])
                     currentTime = datetime.datetime.fromtimestamp(time.time())
@@ -284,7 +317,23 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
                         else:
                             status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M')}"
-                    self.users.append(i[0] + f' ({status})')
+                    if i[1]:
+                        onlineUsers.append(i[0] + f' ({status})')
+                    else:
+                        offlineUsers.append(i[0] + f' ({status})')
+                
+                if self.isOnline.isChecked():
+                    for onu in onlineUsers:
+                        self.users.append(onu)
+                    for ofu in offlineUsers:
+                        self.users.append(ofu)
+                else:
+                    for ofu in offlineUsers:
+                        self.users.append(ofu)
+                    for onu in onlineUsers:
+                        self.users.append(onu)
+
+                # Тест не проводился
                 self.isNotInUsers = False
                 self.scrollArea.setWidget(self.users)
         else:
@@ -596,7 +645,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def update(self):
         request = requests.get(self.__url + "/get_servers")
         if "someProblems" in request.json():
-            return showError("Проблемы с сервером")
+            showError("Проблемы с сервером")
+            return self.close()
         res = request.json()['servers']
 
         self.layout = QVBoxLayout()
@@ -696,6 +746,7 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
     def download(self):
         neededFiles = list()
+        self.downloadedFiles = dict()
 
         for item in self.listWidget.selectedItems():
             neededFiles.append(item.text())
@@ -708,16 +759,18 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
             filesList = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
 
+            isFound = False
             for file in filesList:
                 if neededFile == file:
+                    isFound = True
                     self.dial = QDialog(self)
                     label = QLabel(
                         text=f"{file} уже скачан\nВы уверены, что хотите перезаписать данные?")
                     accept = QPushButton(text="Да")
                     decline = QPushButton(text="Нет")
 
-                    accept.pressed.connect(lambda: self.dial.close())
-                    decline.pressed.connect(lambda: self.decline())
+                    accept.pressed.connect(lambda: self.accept(file, resp.content))
+                    decline.pressed.connect(lambda: self.dial.close())
 
                     self.dial.setLayout(QVBoxLayout())
                     self.dial.layout().addWidget(label)
@@ -725,16 +778,22 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
                     self.dial.layout().addWidget(decline)
                     self.dial.setFixedSize(310, 150)
                     self.dial.exec_()
+            if not isFound:
+                self.downloadedFiles[neededFile] = resp.content
+            
 
-            if not self.isCancelled:
-                with open("Загрузки/" + str(neededFiles[0]), "wb") as file:
-                    file.write(resp.content)
-                self.showMessage("Ваш файл был успешно скачан")
-            self.isCancelled = False
+        if self.downloadedFiles:
+            info = ""
+            for fileName in self.downloadedFiles.keys():
+                with open("Загрузки/" + str(fileName), "wb") as file:
+                    file.write(self.downloadedFiles[fileName])
+                    info = info + str(fileName) + ", "
+            self.showMessage(f"Файлы {info[:-2]} были успешно скачаны")
+            
 
-    def decline(self):
+    def accept(self, fileName, fileContent):
         self.dial.close()
-        self.isCancelled = True
+        self.downloadedFiles[fileName] = fileContent
 
 
 if __name__ == "__main__":

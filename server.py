@@ -18,9 +18,15 @@ last_timestamps = dict()
 
 userIsLoggedIn = dict()
 
-def hash(text):
+def hash_(text):
     return hashlib.md5(text.encode()).hexdigest()
 
+def get_server_name_(server_id):
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        server_name = cur.execute(
+            f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+    return server_name
 
 @app.route("/")
 def hello():
@@ -57,10 +63,12 @@ def create_server():
             if servName in serverName:
                 return {"nameIsTaken": True}
         cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
-                    (servName, servAdmin, servAdmin, time.time(), hash(servPass)))
+                    (servName, servAdmin, servAdmin, time.time(), hash_(servPass)))
         conn.commit()
 
         server_id = cur.execute(f"SELECT server_id FROM `servers` WHERE `server_name` LIKE '%{servName}%'").fetchone()
+
+        os.mkdir("static/" + str(servName))
 
         return {"server_id": server_id}
     return {"someProblems": True}
@@ -113,7 +121,7 @@ def login():
         return {'isNotFilled': True}
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash(password)}';").fetchone():
+        if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash_(password)}';").fetchone():
             cur.execute(
                 f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
             conn.commit()
@@ -138,7 +146,7 @@ def reg():
             return {'nameIsTaken': True}
         if re.match(pattern, password):
             cur.execute(
-                "INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash(password)))
+                "INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash_(password)))
             conn.commit()
             return {'ok': True}
     return {"badPassword": True}
@@ -210,36 +218,71 @@ def get_servers():
 
 @app.route("/upload")
 def upload():
+    try:
+        server_id = request.args['server_id']
+        server_name = get_server_name_(server_id)
+    except:
+        server_id = 0
+    
     data = request.data
     filename = request.args['filename']
 
-    files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    if not server_id:
+        files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    else:
+        files = [f for _, _, f in os.walk(os.getcwd() + "/static/" + str(server_name))][0]
+
     for file in files:
         if file == filename:
             return {"nameIsTaken": True}
-    with open(r"static/" + filename, "wb+") as file:
-        file.write(data)
+
+    if not server_id:
+        with open("static/" + filename, "wb+") as file:
+            file.write(data)
+    else:
+        with open("static/" + server_name + "/" + filename, "wb+") as file:
+            file.write(data)
+
     return {"ok": True}
 
 # Можно вернуть либо один файл, либо архивом несколько
 @app.route("/download")
 def download():
+    try:
+        server_id = request.json()['server_id']
+        server_name = get_server_name_(server_id)
+    except:
+        server_id = 0
 
     neededFile = request.get_json()["neededFile"]
 
-    returnedFiles = list()
-
-    filesList = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    if not server_id:
+        filesList = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    else:
+        filesList = [f for _, _, f in os.walk("static/" + str(server_name))][0]
 
     for file in filesList:
         if neededFile == file:
-            return send_from_directory(directory="static/", filename=file, as_attachment=True)
+            if server_id:
+                return send_from_directory(directory="static/" + str(server_name), filename=file, as_attachment=True)
+            else:
+                return send_from_directory(directory="static/", filename=file, as_attachment=True)
 
 
 
 @app.route("/get_files")
 def get_files():
-    files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    try:
+        server_id = request.json['server_id']
+    except:
+        server_id = 0
+    
+    if not server_id:
+        files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+    else:
+        print("|f")
+        server_name = get_server_name_(server_id)
+        files = [f for _, _, f in os.walk(os.getcwd() + "/static/" + str(server_name))][0]
     return {"allFiles": files}
 
 
