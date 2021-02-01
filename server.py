@@ -76,40 +76,73 @@ def create_server():
 Название сервера, дата запуска, админ
     '''
 
-
+# Проверить обновляются ли юзеры на разных серверах
 @app.route("/connect")
 def connect():
     with sq.connect("Messenger.db") as conn:
-        # try:
-        cur = conn.cursor()
-        server_id = request.json['server_id']
-        username = request.json['username']
-        password = request.json['password']
+        try:
+            cur = conn.cursor()
+            server_id = str(request.json['server_id'])
+            username = request.json['username']
+            password = request.json['password']
 
-        rightPassword = cur.execute(
-            f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
+            rightPassword = cur.execute(
+                f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
 
-        if rightPassword == password:
-            cur.execute(
-                f"UPDATE `users` SET isOnline=1 WHERE username='{ username }'")
-            servs_id = cur.execute(
-                f"SELECT servers_id FROM `users` WHERE username='{ username }'").fetchone()[0]
-            if str(server_id) not in servs_id:
-                cur.execute(
-                    f"UPDATE `users` SET servers_id=servers_id || ' ' || { server_id } WHERE username='{username}';")
-                conn.commit()
-            serv_users = cur.execute(
-                f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()[0]
+            if rightPassword == password:
+                serv_users = cur.execute(
+                    f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()[0]
 
-            if username not in serv_users:
-                cur.execute(
-                    f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
-                conn.commit()
-        else:
-            return {"badPassword": True}
-        # except Exception as e:
-        #     return {"someProblems": str(e)}
-    userIsLoggedIn[server_id] = True
+                # Обновляем перечень пользователей для сервера
+                if username not in serv_users:
+                    cur.execute(
+                        f"UPDATE `servers` SET users = users || ' ' || '{ username }' WHERE `server_id` = {server_id};")
+                    conn.commit()
+
+                # Проверяем на наличие данного сервера у пользователя
+                servs_id = cur.execute(
+                    f"SELECT servers_id FROM `users` WHERE username='{ username }'").fetchone()[0]
+                
+                if str(server_id) not in servs_id:
+                    cur.execute(
+                        f"UPDATE users SET `servers_id` = `servers_id` || ' ' || { server_id }, `isOnline` = `isOnline` || ' ' || '1', `lastSeen` = `lastSeen` || ' ' || {str(time.time())}, `entryTime` = `entryTime` || ' ' || {str(time.time())}, `timeSpent` = `timeSpent` || ' ' || '0.0' WHERE username='{username}';")
+                    conn.commit()
+                # Обновление онлайна и времени входа
+                else:
+                    # Получаем индекс сервера и изменяем значения по индексу
+                    server_id_ = cur.execute(
+                            f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
+                    isOnline = cur.execute(
+                            f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split()
+                    entryTime = cur.execute(
+                            f"SELECT `entryTime` FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split()
+                    isOnline[server_id_] = '1'
+                    entryTime[server_id_] = str(time.time())
+
+                    # Создаём необходимые строки для внесения в бд
+                    isOnlineToStr = ""
+                    entryTimeToStr = ""
+                    for s in isOnline:
+                        isOnlineToStr += s + " "
+                    for s in entryTime:
+                        entryTimeToStr += s + " "
+
+                    # server_id_ = cur.execute(
+                    #     f"SELECT servers_id FROM `users` WHERE server_id={server_id}").fetchone()[0]
+
+                    # Обновляем инфу о юзерах с имеющимися данными
+                    print("iso", isOnlineToStr)
+                    print("ent", entryTimeToStr)
+                    ex = f"UPDATE `users` SET `isOnline`={isOnlineToStr}, `entryTime`={entryTimeToStr} WHERE username='{ username }'"
+                    print(ex)
+                    cur.execute(
+                        f"UPDATE `users` SET `isOnline`='{isOnlineToStr}', `entryTime`='{entryTimeToStr}' WHERE username='{ username }'")
+                    conn.commit()
+            else:
+                return {"badPassword": True}
+        except:
+            return {"someProblems": True}
+    userIsLoggedIn[str(server_id)] = True
     return {"ok": True}
 
 
@@ -314,36 +347,66 @@ def get_messages():
 
 @app.route("/get_users")
 def get_users():
-    # Возвращаем словарь
-    # users нужен, чтобы обращаться к нему как к json, list нужен, чтобы перебирать никнеймы
     with sq.connect("Messenger.db") as conn:
-        server_id = request.json["server_id"]
+        server_id = str(request.json["server_id"])
         cur = conn.cursor()
-        res = cur.execute(
-            f"SELECT username, isOnline, lastSeen FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
-        res = sorted(res, key=lambda tup: tup[1], reverse=True)
-        try:
-            return {
-                'res': res,
-                'userIsLoggedIn': userIsLoggedIn[server_id]
-            }
-        except:
-            return {
-                'res': res,
-                'userIsLoggedIn': 0
-            }
+        user_info = cur.execute(
+            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+        returnList = list()
+    for user in user_info:
+        server_id_ = user[1].split().index(server_id)
+        isOnline = user[2].split()[server_id_]
+        lastSeen = user[3].split()[server_id_]
+        returnList.append(user[0] + " " + isOnline + " " + lastSeen)
+
+    res = sorted(returnList, key=lambda tup: tup[1], reverse=True)
+    print(server_id)
+    print(userIsLoggedIn)
+    try:
+        print(userIsLoggedIn[server_id])
+        return {
+            'res': res,
+            'userIsLoggedIn': userIsLoggedIn[server_id]
+        }
+    except:
+        return {
+            'res': res,
+            'userIsLoggedIn': 0
+        }
     
 
 
 @app.route("/disconnect")
 def disconnect():
+    uname = request.json['username']
+    server_id = str(request.json['server_id'])
+
     with sq.connect("Messenger.db") as conn:
-        username = request.json['username']
-        cur = conn.cursor()
-        cur.execute(
-            f"UPDATE `users` SET `isOnline`=0, `lastSeen`={time.time()} WHERE `username`='{ username }';")
-        conn.commit()
-    return 'ok'
+        try:
+            cur = conn.cursor()
+            # Достаём необходимые данные из БД
+            server_id_ = cur.execute(
+                    f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
+            isOnline = cur.execute(
+                    f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+            lastSeen = cur.execute(
+                    f"SELECT `lastSeen` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+            isOnline[server_id_] = '0'
+            lastSeen[server_id_] = str(time.time())
+
+            isOnlineToStr = ""
+            lastSeenToStr = ""
+            for s in isOnline:
+                isOnlineToStr += s + " "
+            for s in lastSeen:
+                lastSeenToStr += s + " "
+
+            cur.execute(
+                f"UPDATE `users` SET `isOnline`='{isOnlineToStr}', `lastSeen`='{lastSeenToStr}' WHERE `username` LIKE '%{uname}%';")
+            conn.commit()
+        except Exception as e:
+            return {"someProblems": str(e)}
+    return {"ok": True}
 
 
 if __name__ == '__main__':

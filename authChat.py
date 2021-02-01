@@ -293,34 +293,41 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.users = QTextBrowser()
 
             # Протестить
-            for i in res:
-                if i[0] not in self.currentUsers:
-                    self.currentUsers.append(i[0])
+            # sample:
+            # ['Илья 0 1611867749.54902', 'Тест 0 1611865145.06428', 'qwerty 0 1612211290.75964', '123 0 1611867690.18362']
+
+            for user_info in res:
+                user = user_info.split()
+                if user[0] not in self.currentUsers:
+                    self.currentUsers.append(user[0])
                     self.isNotInUsers = True
             if self.isNotInUsers or isLogged:
                 onlineUsers = list()
                 offlineUsers = list()
-                for i in res:
-                    lastTimeSeen = datetime.datetime.fromtimestamp(i[2])
+                for user_info in res:
+                    user = user_info.split()
+                    
+                    user[1] = int(user[1])
+                    lastTimeSeen = datetime.datetime.fromtimestamp(float(user[2]))
                     currentTime = datetime.datetime.fromtimestamp(time.time())
                     if (currentTime.year > lastTimeSeen.year):
                         if (currentTime.day > lastTimeSeen.day) and (currentTime.month == lastTimeSeen.month):
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
                         elif (currentTime.month > lastTimeSeen.month):
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
                         else:
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m/%y')}"
                     else:
                         if (currentTime.day > lastTimeSeen.day) and (currentTime.month == lastTimeSeen.month):
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
                         elif (currentTime.month > lastTimeSeen.month):
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M %d/%m')}"
                         else:
-                            status = "Online" if i[1] else f"Offline {lastTimeSeen.strftime('%H:%M')}"
-                    if i[1]:
-                        onlineUsers.append(i[0] + f' ({status})')
+                            status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M')}"
+                    if user[1]:
+                        onlineUsers.append(user[0] + f' ({status})')
                     else:
-                        offlineUsers.append(i[0] + f' ({status})')
+                        offlineUsers.append(user[0] + f' ({status})')
                 
                 if self.isOnline.isChecked():
                     for onu in onlineUsers:
@@ -337,7 +344,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 self.isNotInUsers = False
                 self.scrollArea.setWidget(self.users)
         else:
-            showError("Возникли неполадки с сервером")
             return self.close()
 
     def update_messages(self, rs):
@@ -517,19 +523,23 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.isSearchEnabled = False
 
     def exit(self):
-        return requests.get(
+        resp = requests.get(
             self.__url + "/disconnect",
             json={
-                "username": self.username
+                "username": self.username,
+                "server_id": self.server_id
             }
         )
+        if "someProblems" in resp.json():
+            return showError("Проблемы с сервером")
 
     # Выйти с акка
     def logOff(self):
         requests.get(
             self.__url + "/disconnect",
             json={
-                "username": self.username
+                "username": self.username,
+                "server_id": self.server_id
             }
         )
         self.close()
@@ -542,7 +552,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         requests.get(
             self.__url + "/disconnect",
             json={
-                "username": self.username
+                "username": self.username,
+                "server_id": self.server_id
             }
         )
         self.close()
@@ -803,7 +814,7 @@ if __name__ == "__main__":
     except:
         pass
     app = QtWidgets.QApplication([])
-    window = Chat()
+    window = Lobby()
     # window.setFixedSize(490, 540)
     window.show()
     app.exec_()

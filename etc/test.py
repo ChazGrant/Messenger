@@ -6,12 +6,49 @@ import time
 import hashlib
 import os
 
+'''
+time_spent
+disconnected -> time_spent = current_time - entry_time
+connected -> entry_time = current_time
+admin -> time_spent_for_user -> current_time - entry_time + time_spent
+'''
+with sq.connect("../Messenger.db") as conn:
+    cur = conn.cursor()
+    print(cur.execute("SELECT * FROM users WHERE username = 'qwerty'").fetchall())
+    exit()
+with sq.connect("../Messenger.db") as conn:
+    cur = conn.cursor()
+    server_id = "1"
+    uname = "qwerty"
+    server_id_ = cur.execute(
+            f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
+    isOnline = cur.execute(
+            f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+    entryTime = cur.execute(
+            f"SELECT `lastSeen` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+    isOnline[server_id_] = '1'
+    entryTime[server_id_] = str(time.time())
 
+isOnlineToStr = ""
+lastSeenToStr = ""
+for s in isOnline:
+    isOnlineToStr += s + " "
+for s in entryTime:
+    lastSeenToStr += s + " "
+print(isOnlineToStr)
+print(lastSeenToStr)
+
+exit()
+
+
+exit()
 
 # pattern = r"^(?=.*[\W].*)(?=.*[0-9].*)(?=.*[a-zA-Z].*)[0-9a-zA-Z\W]{8,16}?$"
 # if re.sub(" ", "", passw) == passw:
 #     if re.match(pattern, passw):
 #         print("OK")
+exit()
+print(time.time())
 
 print(os.getcwd())
 
