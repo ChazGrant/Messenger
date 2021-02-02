@@ -57,6 +57,10 @@ class Ui_MainWindow(object):
 "    border-radius: 15px;\n"
 "    background-size: 5px;\n"
 "}\n"
+"#showUsersButton{\n"
+"    border-radius: 15px;\n"
+"    background-size: 5px;\n"
+"}\n"
 "#searchButton{\n"
 "    border-radius: 15px;\n"
 "    background-size: 5px;\n"
@@ -139,6 +143,15 @@ class Ui_MainWindow(object):
         self.downloadButton = QtWidgets.QPushButton(self.frame)
         self.downloadButton.setGeometry(QtCore.QRect(710, 460, 191, 51))
         self.downloadButton.setObjectName("downloadButton")
+        self.showUsersButton = QtWidgets.QToolButton(self.frame)
+        self.showUsersButton.setGeometry(QtCore.QRect(1080, 10, 41, 31))
+        self.showUsersButton.setText("")
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.showUsersButton.setIcon(icon1)
+        self.showUsersButton.setShortcut("")
+        self.showUsersButton.setAutoRepeatDelay(300)
+        self.showUsersButton.setObjectName("showUsersButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1299, 29))

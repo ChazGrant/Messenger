@@ -56,6 +56,10 @@ QLineEdit{
 	border-radius: 15px;
 	background-size: 5px;
 }
+#showUsersButton{
+	border-radius: 15px;
+	background-size: 5px;
+}
 #searchButton{
 	border-radius: 15px;
 	background-size: 5px;
@@ -322,6 +326,29 @@ QLineEdit{
      </property>
      <property name="text">
       <string>Скачать файлы</string>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="showUsersButton">
+     <property name="geometry">
+      <rect>
+       <x>1080</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>settings.png</normaloff>settings.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
      </property>
     </widget>
    </widget>

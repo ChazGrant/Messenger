@@ -6,6 +6,7 @@ import AuthUI
 import MainUI
 import LobbyUI
 import downloadUI
+import AdminUI
 import searchFormUI
 import requests
 import hashlib
@@ -15,7 +16,7 @@ import os
 from crypt import *
 
 URL = "http://127.0.0.1:5000"
-USERNAME = "qwerty"
+USERNAME = "Jack"
 KEY = 314
 WORD_FOR_SEARCH = ""
 
@@ -194,6 +195,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.abortSearchButton.pressed.connect(self.abortSearch)
         self.downloadButton.pressed.connect(self.download)
         self.uploadButton.pressed.connect(self.upload)
+        self.showUsersButton.pressed.connect(self.showUsers)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -205,6 +207,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timestamp = 0.0
         self.username = username
         self.previousMessages = []
+        self.previousMessageDate = 0
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
@@ -241,6 +244,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.exit()
         event.accept()
 
+    def showUsers(self):
+        self.main = adminPanel()
+        self.main.show()
+
     def download(self):
         resp = requests.get(self.__url + "/get_files", json={
             "server_id": self.server_id
@@ -274,9 +281,12 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         try:
             response = requests.get(self.__url + "/get_server_name",
                                     json={
-                                        "server_id": self.server_id,
+                                        "username": self.username,
+                                        "server_id": self.server_id
                                     })
             self.serverNameLabel.setText(response.json()['server_name'])
+            if not response.json()["rightsGranted"]:
+                self.showUsersButton.hide()
         except:
             showError("При попытке подключиться к серверу возникли ошибки")
             return self.close()
@@ -353,8 +363,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
     
         if rs.status_code == 200:
-            messages = rs.json()['messages']
-            previousMessageDate = 0
+            messages = rs.json()['messages'] 
             if messages:
                 for message in messages:
                     ###
@@ -370,27 +379,27 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         message[2])
                     
 
-                    if not previousMessageDate:
-                        previousMessageDate = messageDate
+                    if not self.previousMessageDate:
+                        self.previousMessageDate = messageDate
                         self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
                         self.textBrowser.append("<b>Начало переписки</b>")
                         self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
                         self.textBrowser.append("")
                     
-                    if previousMessageDate.year < messageDate.year:
-                        previousMessageDate = messageDate
+                    if self.previousMessageDate.year < messageDate.year:
+                        self.previousMessageDate = messageDate
                         self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
                         self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
                         self.textBrowser.append("")
 
-                    elif previousMessageDate.month < messageDate.month:
-                        previousMessageDate = messageDate
+                    elif self.previousMessageDate.month < messageDate.month:
+                        self.previousMessageDate = messageDate
                         self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
                         self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
                         self.textBrowser.append("")
                     
-                    elif previousMessageDate.month == messageDate.month and previousMessageDate.day < messageDate.day:
-                        previousMessageDate = messageDate
+                    elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
+                        self.previousMessageDate = messageDate
                         self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
                         self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
                         self.textBrowser.append("")
@@ -531,7 +540,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             }
         )
         if "someProblems" in resp.json():
-            return showError("Проблемы с сервером")
+            return showError(resp.json()["someProblems"])
 
     # Выйти с акка
     def logOff(self):
@@ -697,6 +706,80 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                 showError("Беды с сервером")
 
 
+class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.exitButton.pressed.connect(self.close)
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.tree.setHeaderLabels(['Пользователи в данном чате'])
+        res = requests.get("http://127.0.0.1:5000/get_users", json={
+                              "server_id": '1'
+                          })
+        # self.tree.addTopLevelItem(QtWidgets.QTreeWidgetItem(["fae", "qwe"]))
+        '''
+            0 - username
+            1 - isOnline
+            2 - lastSeen
+            3 - entryTime
+            4 - timeSpent
+        '''
+        users = res.json()['res']
+        for user in users:
+            u = user.split()
+            status = "Online" if int(u[1]) else "Offline"
+            us = QtWidgets.QTreeWidgetItem(self.tree, [u[0]])
+            
+            QtWidgets.QTreeWidgetItem(us, [f"Статус: {status}"])
+            QtWidgets.QTreeWidgetItem(us, [f"Последнее время входа: {datetime.datetime.fromtimestamp(float(u[2])).strftime('%H:%M:%S %d/%m/%y')}"])
+            if int(u[1]):
+                totalTime = (
+                        float(u[4]) + time.time() - float(u[3]))
+                QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {self.calculateTime(totalTime)}"])
+            else:
+                QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {self.calculateTime(float(u[4]))}"])
+
+        self.tree.expandAll()
+
+    def calculateTime(self, time):
+        tm = float(time)
+
+        hours = int(tm / (3600))
+        strhours = str(hours)
+        if len(strhours) == 1:
+            strhours = "0" + strhours
+
+        mins = int( (tm - (hours * 3600) ) / 60)
+        strmins = str(mins)
+        if len(strmins) == 1:
+            strmins = "0" + strmins
+
+        secs = int(tm - hours * 3600 - mins * 60)
+        strsecs = str(secs)
+        if len(strsecs) == 1:
+            strsecs = "0" + strsecs
+
+        return strhours + ":" + strmins + ":" + strsecs
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QtCore.QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+
+    def getTreeItem(self):
+        if not (self.tree.selectedItems()[0].parent()):
+            self.tree.invisibleRootItem().removeChild(self.tree.selectedItems()[0])
+            self.tree.expandAll()
+
+
 class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
     closeDialog = pyqtSignal()
     def __init__(self):
@@ -814,7 +897,7 @@ if __name__ == "__main__":
     except:
         pass
     app = QtWidgets.QApplication([])
-    window = Lobby()
+    window = Chat()
     # window.setFixedSize(490, 540)
     window.show()
     app.exec_()

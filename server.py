@@ -26,7 +26,8 @@ def get_server_name_(server_id):
         cur = conn.cursor()
         server_name = cur.execute(
             f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
-    return server_name
+    return {
+        "server_name": server_name,}
 
 @app.route("/")
 def hello():
@@ -82,6 +83,7 @@ def connect():
     with sq.connect("Messenger.db") as conn:
         try:
             cur = conn.cursor()
+            # Достаём данные из жсона
             server_id = str(request.json['server_id'])
             username = request.json['username']
             password = request.json['password']
@@ -131,10 +133,7 @@ def connect():
                     #     f"SELECT servers_id FROM `users` WHERE server_id={server_id}").fetchone()[0]
 
                     # Обновляем инфу о юзерах с имеющимися данными
-                    print("iso", isOnlineToStr)
-                    print("ent", entryTimeToStr)
-                    ex = f"UPDATE `users` SET `isOnline`={isOnlineToStr}, `entryTime`={entryTimeToStr} WHERE username='{ username }'"
-                    print(ex)
+
                     cur.execute(
                         f"UPDATE `users` SET `isOnline`='{isOnlineToStr}', `entryTime`='{entryTimeToStr}' WHERE username='{ username }'")
                     conn.commit()
@@ -228,12 +227,18 @@ def send_message():
 
 @app.route("/get_server_name")
 def get_server_name():
+    username = request.json['username']
     server_id = request.json['server_id']
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
+        admin = cur.execute(
+            f"SELECT admin FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
         server_name = cur.execute(
             f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
-    return {'server_name': server_name}
+    return {
+        'server_name': server_name,
+        'rightsGranted': str(username) == str(admin)
+        }
 
 
 @app.route("/get_servers")
@@ -351,19 +356,20 @@ def get_users():
         server_id = str(request.json["server_id"])
         cur = conn.cursor()
         user_info = cur.execute(
-            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
         returnList = list()
     for user in user_info:
         server_id_ = user[1].split().index(server_id)
         isOnline = user[2].split()[server_id_]
         lastSeen = user[3].split()[server_id_]
-        returnList.append(user[0] + " " + isOnline + " " + lastSeen)
+        entryTime = user[4].split()[server_id_]
+        timeSpent = user[5].split()[server_id_]
+        returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent)
 
     res = sorted(returnList, key=lambda tup: tup[1], reverse=True)
-    print(server_id)
-    print(userIsLoggedIn)
+
     try:
-        print(userIsLoggedIn[server_id])
+
         return {
             'res': res,
             'userIsLoggedIn': userIsLoggedIn[server_id]
@@ -391,18 +397,27 @@ def disconnect():
                     f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
             lastSeen = cur.execute(
                     f"SELECT `lastSeen` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+            timeSpent = cur.execute(
+                    f"SELECT `timeSpent` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+            entryTime =cur.execute(
+                    f"SELECT `entryTime` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
             isOnline[server_id_] = '0'
+            timeSpent[server_id_] = str(float(timeSpent[server_id_]) + time.time() - float(entryTime[server_id_]))
             lastSeen[server_id_] = str(time.time())
 
             isOnlineToStr = ""
             lastSeenToStr = ""
+            timeSpentToStr = ""
+
             for s in isOnline:
                 isOnlineToStr += s + " "
             for s in lastSeen:
                 lastSeenToStr += s + " "
+            for s in timeSpent:
+                timeSpentToStr += s + " "
 
             cur.execute(
-                f"UPDATE `users` SET `isOnline`='{isOnlineToStr}', `lastSeen`='{lastSeenToStr}' WHERE `username` LIKE '%{uname}%';")
+                f"UPDATE `users` SET `timeSpent`='{timeSpentToStr}', `isOnline`='{isOnlineToStr}', `lastSeen`='{lastSeenToStr}' WHERE `username` LIKE '%{uname}%';")
             conn.commit()
         except Exception as e:
             return {"someProblems": str(e)}

@@ -5,6 +5,9 @@ import datetime
 import time
 import hashlib
 import os
+import math
+
+print(time.time())
 
 '''
 time_spent
@@ -12,6 +15,28 @@ disconnected -> time_spent = current_time - entry_time
 connected -> entry_time = current_time
 admin -> time_spent_for_user -> current_time - entry_time + time_spent
 '''
+# 3600sec -> 1 hour
+# 360sec -> 1 min
+tm = float('3668.72721290')
+
+hours = int(tm / (3600))
+strhours = str(hours)
+if len(strhours) == 1:
+    strhours = "0" + strhours
+mins = int( (tm - (hours * 3600) ) / 60)
+strmins = str(mins)
+if len(strmins) == 1:
+    strmins = "0" + strmins
+
+secs = int(tm - hours * 3600 - mins * 60)
+strsecs = str(secs)
+if len(strsecs) == 1:
+    strsecs = "0" + strsecs
+
+print(strhours, strmins, strsecs)
+exit()
+print(datetime.datetime.fromtimestamp(tm).strftime("%m"))
+exit()
 with sq.connect("../Messenger.db") as conn:
     cur = conn.cursor()
     print(cur.execute("SELECT * FROM users WHERE username = 'qwerty'").fetchall())
