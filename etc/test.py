@@ -7,6 +7,50 @@ import hashlib
 import os
 import math
 
+def index(text, searchText):
+    try:
+        text.index(searchText)
+        return True
+    except ValueError:
+        return False
+
+def beautifyText(text, searchText):
+    if searchText == "":
+        raise ValueError("Пустая строка для поиска")
+    currentIndex = 0
+    newStr = ""
+    while True:
+        try:
+            text[currentIndex:].index(searchText)
+        except:
+            break
+        findIndex = text[currentIndex:].index(searchText)
+        sumIndex = currentIndex + findIndex
+        newStr += text[currentIndex:currentIndex + findIndex] + text[sumIndex:sumIndex + len(searchText)].upper()
+
+        currentIndex += findIndex + 1
+        
+    newStr += text[currentIndex:]
+    return newStr
+    
+
+string = "Выводит информацию о нужной команде"
+word = "а"
+print(word in string)
+exit()
+print(beautifyText(string, word))
+exit()
+newstring = string[0:string.find(word)] + string[string.find(word):string.find(word) + len(word)].upper() + string[string.find(word) + len(word):]
+# print(string[0:string.find(word)])
+# print(string[string.find(word):string.find(word) + len(word)].upper())
+# print(string[string.find(word) + len(word):])
+print(newstring)
+exit()
+
+keyboard.add_hotkey("enter", lambda: print("ffffffffffffffffffffffffffffffffffffffffffffff\nffffffffffffffffffffffffffffffff"))
+while True:
+    print("f")
+exit()
 print(time.time())
 
 '''

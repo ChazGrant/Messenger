@@ -2,12 +2,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel, QFrame, QAbstractItemView
 from PyQt5.QtCore import QPoint, QThread, pyqtSignal
+
 import AuthUI
 import MainUI
 import LobbyUI
 import downloadUI
 import AdminUI
 import searchFormUI
+
 import requests
 import hashlib
 import datetime
@@ -32,6 +34,25 @@ def showError(text):
     msg.setWindowTitle("Error")
     msg.exec_()
 
+
+def beautifyText(text, searchText):
+    if searchText == "":
+        raise ValueError("Пустая строка для поиска")
+    currentIndex = 0
+    newStr = ""
+    while True:
+        try:
+            text[currentIndex:].index(searchText)
+        except:
+            break
+        findIndex = text[currentIndex:].index(searchText)
+        sumIndex = currentIndex + findIndex
+        newStr += text[currentIndex:currentIndex + findIndex] + "<span style='color: red;'>" + text[sumIndex:sumIndex + len(searchText)] + "</span>"
+
+        currentIndex += findIndex + 1
+        
+    newStr += text[currentIndex:]
+    return newStr
 
 def removeSpaces(string):
     '''
@@ -65,7 +86,6 @@ class LoadMessagesThread(QThread):
                               'server_id': self.server_id
                           })
         except:
-            print("Беды")
             rs = False
         finally:
             self.load_finished.emit(rs)
@@ -87,7 +107,6 @@ class LoadUsersThread(QThread):
                               "server_id": self.server_id
                           })
         except:
-            print("Беды")
             rs = False
         finally:
             self.load_finished.emit(rs)
@@ -219,7 +238,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
-        self.update()
+        # self.update()
 
     def showMessage(self, text):
         '''
@@ -239,6 +258,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
+
     # Переопределяем метод выхода из приложения
     def closeEvent(self, event):
         self.exit()
@@ -253,7 +273,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             "server_id": self.server_id
         })
 
-        hub = downloadHub(resp.json()["allFiles"])
         if resp.status_code == 200:
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)
@@ -290,6 +309,24 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         except:
             showError("При попытке подключиться к серверу возникли ошибки")
             return self.close()
+
+    def update(self):
+        if not self.isSearchEnabled:
+            try:
+                self.usersThread = LoadUsersThread(
+                    self.__url + "/get_users", self.server_id)
+                self.usersThread.load_finished.connect(self.update_users)
+                self.usersThread.finished.connect(self.usersThread.deleteLater)
+                self.usersThread.start()
+
+                self.msgThread = LoadMessagesThread(
+                    self.__url + "/get_messages", self.timestamp, self.server_id)
+                self.msgThread.load_finished.connect(self.update_messages)
+                self.msgThread.finished.connect(self.msgThread.deleteLater)
+                self.msgThread.start()
+            except:
+                showError("Вознилки неполадки")
+                return self.close()
 
     def update_users(self, rs):
         try:
@@ -423,24 +460,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 "При попытке подключиться к серверу возникли ошибки")
             return self.close()
 
-    def update(self):
-        if not self.isSearchEnabled:
-            try:
-                self.usersThread = LoadUsersThread(
-                    self.__url + "/get_users", self.server_id)
-                self.usersThread.load_finished.connect(self.update_users)
-                self.usersThread.finished.connect(self.usersThread.deleteLater)
-                self.usersThread.start()
-
-                self.msgThread = LoadMessagesThread(
-                    self.__url + "/get_messages", self.timestamp, self.server_id)
-                self.msgThread.load_finished.connect(self.update_messages)
-                self.msgThread.finished.connect(self.msgThread.deleteLater)
-                self.msgThread.start()
-            except:
-                showError("Вознилки неполадки")
-                return self.close()
-
     def send_message(self):
         text = removeSpaces(self.textEdit.toPlainText())
         if len(text) > 100:
@@ -471,7 +490,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.sForm.closeDialog.connect(lambda: self.find(self.sForm.text, self.sForm.checkBox.isChecked(), self.sForm.checkBox_2.isChecked()))
         
     def find(self, text, nameIsChecked, msgIsChecked):
-        self.word = text
+        self.word = removeSpaces(text)
         self.result = []
 
 
@@ -484,20 +503,22 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 })
 
             if response.status_code == 200:
+                self.matches = 0
                 messages = response.json()['messages']
                 for message in messages:
                     dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
                     if self.word in message[0] and nameIsChecked:
                         self.dict = {"username": message[0], 
-                                    "message": ("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                                    "message": ("<b>" + dt + " " + beautifyText(message[0], self.word) + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
                         self.result.append(self.dict)
+                        self.matches += 1
                     elif self.word in decrypt(message[1], self.__key) and msgIsChecked:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                                                message[0] + "</b>:<br>" + beautifyText(decrypt(message[1], self.__key), self.word) + "")}
                         self.result.append(self.dict)
+                        self.matches += 1
 
                     if not self.isSearchEnabled:
                         self.dict = {"username": message[0], 
@@ -507,6 +528,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
 
                 if (self.result):
+                    self.sForm.close()
                     self.textBrowser.clear()
                     self.isSearchEnabled = True
                     for searchedMessage in self.result:
@@ -516,8 +538,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
                         self.textBrowser.append(searchedMessage["message"])
                         self.textBrowser.append("")
+                    self.showMessage("Кол-во найденных совпадений: " + str(self.matches))
                 else:
                     return self.showMessage("Ваш запрос не выдал результатов(")
+        else:
+            return showError("Поле поиска не может быть пустым")
 
     def abortSearch(self):
         if self.isSearchEnabled:
@@ -801,7 +826,6 @@ class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
     def setText(self):
         self.text = self.textEdit.toPlainText()
         self.closeDialog.emit()
-        self.close()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()

@@ -122,15 +122,8 @@ def connect():
                     entryTime[server_id_] = str(time.time())
 
                     # Создаём необходимые строки для внесения в бд
-                    isOnlineToStr = ""
-                    entryTimeToStr = ""
-                    for s in isOnline:
-                        isOnlineToStr += s + " "
-                    for s in entryTime:
-                        entryTimeToStr += s + " "
-
-                    # server_id_ = cur.execute(
-                    #     f"SELECT servers_id FROM `users` WHERE server_id={server_id}").fetchone()[0]
+                    isOnlineToStr = " ".join(isOnline)
+                    entryTimeToStr = " ".join(entryTime)
 
                     # Обновляем инфу о юзерах с имеющимися данными
 
@@ -405,16 +398,9 @@ def disconnect():
             timeSpent[server_id_] = str(float(timeSpent[server_id_]) + time.time() - float(entryTime[server_id_]))
             lastSeen[server_id_] = str(time.time())
 
-            isOnlineToStr = ""
-            lastSeenToStr = ""
-            timeSpentToStr = ""
-
-            for s in isOnline:
-                isOnlineToStr += s + " "
-            for s in lastSeen:
-                lastSeenToStr += s + " "
-            for s in timeSpent:
-                timeSpentToStr += s + " "
+            isOnlineToStr = " ".join(isOnline)
+            lastSeenToStr = " ".join(lastSeen)
+            timeSpentToStr = " ".join(timeSpent)
 
             cur.execute(
                 f"UPDATE `users` SET `timeSpent`='{timeSpentToStr}', `isOnline`='{isOnlineToStr}', `lastSeen`='{lastSeenToStr}' WHERE `username` LIKE '%{uname}%';")
