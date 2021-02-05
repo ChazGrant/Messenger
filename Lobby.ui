@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>756</width>
-    <height>492</height>
+    <width>550</width>
+    <height>391</height>
    </rect>
   </property>
   <property name="cursor">
@@ -38,12 +38,19 @@ QFrame{
 }
 QPushButton{
 	border-radius: 15px;
-	background: red;
+	background: rgb(0, 170, 127);
 	color: white;
 }
 QPushButton:hover{
 	background: #333;
-	color: red;
+	color: rgb(0, 170, 127);
+}
+#logOffButton{
+	background: rgb(255, 98, 51);
+}
+#logOffButton:hover{
+	background: #333;
+	color: rgb(255, 98, 51);
 }
 QInputDialog{
 	width: 50px;
@@ -118,7 +125,7 @@ QInputDialog QPushButton:hover{
        <x>20</x>
        <y>50</y>
        <width>261</width>
-       <height>201</height>
+       <height>241</height>
       </rect>
      </property>
      <property name="widgetResizable">
@@ -130,7 +137,7 @@ QInputDialog QPushButton:hover{
         <x>0</x>
         <y>0</y>
         <width>261</width>
-        <height>201</height>
+        <height>241</height>
        </rect>
       </property>
      </widget>
@@ -146,19 +153,6 @@ QInputDialog QPushButton:hover{
      </property>
      <property name="text">
       <string>Обновить</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="logOffButton">
-     <property name="geometry">
-      <rect>
-       <x>310</x>
-       <y>150</y>
-       <width>181</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Выйти с аккаунта</string>
      </property>
     </widget>
     <widget class="QToolButton" name="exitButton">
@@ -201,7 +195,7 @@ QInputDialog QPushButton:hover{
      <property name="geometry">
       <rect>
        <x>310</x>
-       <y>200</y>
+       <y>150</y>
        <width>181</width>
        <height>41</height>
       </rect>
@@ -214,13 +208,26 @@ QInputDialog QPushButton:hover{
      <property name="geometry">
       <rect>
        <x>310</x>
-       <y>250</y>
+       <y>200</y>
        <width>181</width>
        <height>41</height>
       </rect>
      </property>
      <property name="text">
       <string>Загрузить</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="logOffButton">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>250</y>
+       <width>181</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Выйти с аккаунта</string>
      </property>
     </widget>
    </widget>
@@ -230,7 +237,7 @@ QInputDialog QPushButton:hover{
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>756</width>
+     <width>550</width>
      <height>29</height>
     </rect>
    </property>

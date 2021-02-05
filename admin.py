@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 import AdminUI
+import userCreatorUI
 import requests
 import time
 import datetime
@@ -29,6 +30,10 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        self.banButton.pressed.connect(self.banUser)
+        self.createUserButton.pressed.connect(self.createUser)
+        self.exitButton.pressed.connect(self.close)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -60,9 +65,6 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
             else:
                 QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {calculateTime(float(u[4]))}"])
 
-        self.tree.expandAll()
-
-        self.pushButton.pressed.connect(self.getTreeItem)
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -72,13 +74,45 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-    # фаыфа фтфташогфтыа
-    def getTreeItem(self):
+    def banUser(self):
+        if not (self.tree.selectedItems()):
+            return
         if not (self.tree.selectedItems()[0].parent()):
+            print(self.tree.selectedItems()[0].text(0) + " был забанен")
             self.tree.invisibleRootItem().removeChild(self.tree.selectedItems()[0])
-            self.tree.expandAll()
+    
+    def createUser(self):
+        self.main = userCreatorForm()
+        # self.main.setFixedSize()
+        self.main.show()
         
+class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
+        self.createButton.pressed.connect(self.createUser)
+        self.exitButton.pressed.connect(self.close)
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QtCore.QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+    def createUser(self):
+        if self.usernameText.text() == "" or self.passwordText.text() == "":
+            print("Не все поля заполнены")
+        else:
+            # Проверка на занятое имя
+            if self.issueAdminRights.isChecked():
+                print("Создан админ")
+            else:
+                print("Создан обычный пользователь")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])

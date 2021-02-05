@@ -9,6 +9,7 @@ import LobbyUI
 import downloadUI
 import AdminUI
 import searchFormUI
+import userCreatorUI
 
 import requests
 import hashlib
@@ -21,6 +22,45 @@ URL = "http://127.0.0.1:5000"
 USERNAME = "Jack"
 KEY = 314
 WORD_FOR_SEARCH = ""
+
+sizes = \
+{
+    "Chat":
+        {
+            "WIDTH": 1299,
+            "HEIGHT": 700 
+        },
+    "Lobby":
+        {
+            "WIDTH": 550,
+            "HEIGHT": 391 
+        },
+    "Auth":
+        {
+            "WIDTH": 471,
+            "HEIGHT": 531 
+        },
+    "adminPanel":
+        {
+            "WIDTH": 773,
+            "HEIGHT": 464 
+        },
+    "downloadHub":
+        {
+            "WIDTH": 372,
+            "HEIGHT": 317 
+        },
+    "searchForm":
+        {
+            "WIDTH": 467,
+            "HEIGHT": 288 
+        },
+    "userCreatorForm":
+        {
+            "WIDTH": 441,
+            "HEIGHT": 351 
+        }
+}
 
 
 def showError(text):
@@ -265,7 +305,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         event.accept()
 
     def showUsers(self):
-        self.main = adminPanel()
+        self.main = adminPanel(server_id=self.server_id, url=self.__url)
         self.main.show()
 
     def download(self):
@@ -643,6 +683,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         if resp.status_code == 200:
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)
+            self.main.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+            self.main.setAttribute(QtCore.Qt.WA_TranslucentBackground)
             self.main.show()
 
     def upload(self):
@@ -732,18 +774,23 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
 
 class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
-    def __init__(self):
+    def __init__(self, server_id, url=URL):
         super().__init__()
         self.setupUi(self)
 
+        self.banButton.pressed.connect(self.banUser)
+        self.createUserButton.pressed.connect(self.createUser)
         self.exitButton.pressed.connect(self.close)
+
+        self.__url = url
+        self.server_id = server_id
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.tree.setHeaderLabels(['Пользователи в данном чате'])
-        res = requests.get("http://127.0.0.1:5000/get_users", json={
-                              "server_id": '1'
+        res = requests.get(self.__url + "/get_users", json={
+                              "server_id": self.server_id
                           })
         # self.tree.addTopLevelItem(QtWidgets.QTreeWidgetItem(["fae", "qwe"]))
         '''
@@ -767,8 +814,6 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
                 QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {self.calculateTime(totalTime)}"])
             else:
                 QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {self.calculateTime(float(u[4]))}"])
-
-        self.tree.expandAll()
 
     def calculateTime(self, time):
         tm = float(time)
@@ -799,11 +844,49 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         self.oldPos = event.globalPos()
 
 
-    def getTreeItem(self):
+    def banUser(self):
+        if not (self.tree.selectedItems()):
+            return
         if not (self.tree.selectedItems()[0].parent()):
+            response = requests.get(self.__url + "/ban", json={
+                "username": self.tree.selectedItems()[0].text(0),
+                "server_id": self.server_id
+            })
+            print(self.tree.selectedItems()[0].text(0) + " был забанен")
             self.tree.invisibleRootItem().removeChild(self.tree.selectedItems()[0])
-            self.tree.expandAll()
+    
+    def createUser(self):
+        self.main = userCreatorForm()
+        # self.main.setFixedSize()
+        self.main.show()
 
+class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.createButton.pressed.connect(self.createUser)
+        self.exitButton.pressed.connect(self.close)
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QtCore.QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+    def createUser(self):
+        if self.usernameText.text() == "" or self.passwordText.text() == "":
+            print("Не все поля заполнены")
+        else:
+            # Проверка на занятое имя
+            if self.issueAdminRights.isChecked():
+                print("Создан админ")
+            else:
+                print("Создан обычный пользователь")
 
 class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
     closeDialog = pyqtSignal()
@@ -845,12 +928,21 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
         self.browser = QtWidgets.QTextBrowser()
         self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.exitButton.pressed.connect(self.close)
 
         self.selectButton.pressed.connect(
             self.download)
 
         for i in items:
             self.listWidget.addItem(i)
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
 
     def showMessage(self, text):
         '''
@@ -922,6 +1014,6 @@ if __name__ == "__main__":
         pass
     app = QtWidgets.QApplication([])
     window = Chat()
-    # window.setFixedSize(490, 540)
+    window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
     window.show()
     app.exec_()

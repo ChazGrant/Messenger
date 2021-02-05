@@ -24,12 +24,19 @@ class Ui_MainWindow(object):
 "}\n"
 "QPushButton{\n"
 "    border-radius: 15px;\n"
-"    background: red;\n"
+"    background: rgb(0, 170, 127);\n"
 "    color: white;\n"
 "}\n"
 "QPushButton:hover{\n"
 "    background: #333;\n"
-"    color: red;\n"
+"    color: rgb(0, 170, 127);\n"
+"}\n"
+"#exitAccountButton, #disconnectButton{\n"
+"    background: rgb(255, 98, 51);\n"
+"}\n"
+"#exitAccountButton:hover, #disconnectButton:hover{\n"
+"    background: #333;\n"
+"    color: rgb(255, 98, 51);\n"
 "}\n"
 "#textBrowser{\n"
 "    font-size: 16px;\n"
@@ -98,9 +105,11 @@ class Ui_MainWindow(object):
         self.serverNameLabel.setObjectName("serverNameLabel")
         self.exitAccountButton = QtWidgets.QPushButton(self.frame)
         self.exitAccountButton.setGeometry(QtCore.QRect(960, 460, 191, 51))
+        self.exitAccountButton.setStyleSheet("")
         self.exitAccountButton.setObjectName("exitAccountButton")
         self.disconnectButton = QtWidgets.QPushButton(self.frame)
         self.disconnectButton.setGeometry(QtCore.QRect(960, 520, 191, 51))
+        self.disconnectButton.setStyleSheet("")
         self.disconnectButton.setObjectName("disconnectButton")
         self.clearMessageButton = QtWidgets.QPushButton(self.frame)
         self.clearMessageButton.setGeometry(QtCore.QRect(580, 520, 121, 51))

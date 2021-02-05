@@ -23,12 +23,19 @@ QMainWindow{
 }
 QPushButton{
 	border-radius: 15px;
-	background: red;
+	background: rgb(0, 170, 127);
 	color: white;
 }
 QPushButton:hover{
 	background: #333;
-	color: red;
+	color: rgb(0, 170, 127);
+}
+#exitAccountButton, #disconnectButton{
+	background: rgb(255, 98, 51);
+}
+#exitAccountButton:hover, #disconnectButton:hover{
+	background: #333;
+	color: rgb(255, 98, 51);
 }
 #textBrowser{
 	font-size: 16px;
@@ -165,6 +172,9 @@ QLineEdit{
        <height>51</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="text">
       <string>Выйти с аккаунта</string>
      </property>
@@ -177,6 +187,9 @@ QLineEdit{
        <width>191</width>
        <height>51</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Выйти с сервера</string>

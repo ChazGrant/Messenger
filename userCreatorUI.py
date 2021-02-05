@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Auth.ui'
+# Form implementation generated from reading ui file 'userCreator.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(471, 531)
+        MainWindow.resize(471, 434)
         MainWindow.setStyleSheet("*{\n"
 "    font-family: century gothic;\n"
 "    font-size: 20px;\n"
@@ -60,25 +60,22 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setGeometry(QtCore.QRect(10, 70, 441, 391))
+        self.frame.setGeometry(QtCore.QRect(10, 10, 441, 351))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.label = QtWidgets.QLabel(self.frame)
-        self.label.setGeometry(QtCore.QRect(140, 60, 161, 51))
+        self.label.setGeometry(QtCore.QRect(100, 30, 251, 51))
         self.label.setObjectName("label")
-        self.loginButton = QtWidgets.QPushButton(self.frame)
-        self.loginButton.setGeometry(QtCore.QRect(20, 250, 401, 41))
-        self.loginButton.setObjectName("loginButton")
-        self.registrateButton = QtWidgets.QPushButton(self.frame)
-        self.registrateButton.setGeometry(QtCore.QRect(20, 310, 401, 41))
-        self.registrateButton.setObjectName("registrateButton")
+        self.createButton = QtWidgets.QPushButton(self.frame)
+        self.createButton.setGeometry(QtCore.QRect(20, 280, 401, 41))
+        self.createButton.setObjectName("createButton")
         self.usernameText = QtWidgets.QLineEdit(self.frame)
-        self.usernameText.setGeometry(QtCore.QRect(40, 131, 371, 31))
+        self.usernameText.setGeometry(QtCore.QRect(40, 110, 371, 31))
         self.usernameText.setText("")
         self.usernameText.setObjectName("usernameText")
         self.passwordText = QtWidgets.QLineEdit(self.frame)
-        self.passwordText.setGeometry(QtCore.QRect(40, 180, 371, 31))
+        self.passwordText.setGeometry(QtCore.QRect(40, 160, 371, 31))
         self.passwordText.setInputMask("")
         self.passwordText.setText("")
         self.passwordText.setEchoMode(QtWidgets.QLineEdit.Password)
@@ -92,10 +89,10 @@ class Ui_MainWindow(object):
         self.exitButton.setShortcut("")
         self.exitButton.setAutoRepeatDelay(300)
         self.exitButton.setObjectName("exitButton")
-        self.toolButton = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton.setGeometry(QtCore.QRect(170, 10, 121, 121))
-        self.toolButton.setText("")
-        self.toolButton.setObjectName("toolButton")
+        self.issueAdminRights = QtWidgets.QCheckBox(self.frame)
+        self.issueAdminRights.setGeometry(QtCore.QRect(40, 200, 361, 31))
+        self.issueAdminRights.setStyleSheet("color: white;")
+        self.issueAdminRights.setObjectName("issueAdminRights")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 471, 29))
@@ -111,8 +108,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label.setText(_translate("MainWindow", "Вход в аккаунт"))
-        self.loginButton.setText(_translate("MainWindow", "Войти"))
-        self.registrateButton.setText(_translate("MainWindow", "Регистрация"))
+        self.label.setText(_translate("MainWindow", "Создание пользователя"))
+        self.createButton.setText(_translate("MainWindow", "Создать"))
         self.usernameText.setPlaceholderText(_translate("MainWindow", "Имя пользователя"))
         self.passwordText.setPlaceholderText(_translate("MainWindow", "Пароль"))
+        self.issueAdminRights.setText(_translate("MainWindow", "Выдать права админа"))

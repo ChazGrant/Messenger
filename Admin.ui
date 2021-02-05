@@ -23,12 +23,12 @@ QMainWindow{
 }
 QPushButton{
 	border-radius: 15px;
-	background: red;
+	background: rgb(0, 170, 127);
 	color: white;
 }
 QPushButton:hover{
 	background: #333;
-	color: red;
+	color: rgb(0, 170, 127);
 }
 #textBrowser{
 	font-size: 16px;
@@ -136,7 +136,7 @@ background-size: 5px;</string>
        <x>20</x>
        <y>90</y>
        <width>711</width>
-       <height>271</height>
+       <height>221</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -147,6 +147,32 @@ background-size: 5px;</string>
        <string notr="true">1</string>
       </property>
      </column>
+    </widget>
+    <widget class="QPushButton" name="banButton">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>330</y>
+       <width>93</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Бан</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="createUserButton">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>330</y>
+       <width>311</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Создать нового пользователя</string>
+     </property>
     </widget>
    </widget>
   </widget>

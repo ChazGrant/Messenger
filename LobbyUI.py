@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(756, 492)
+        MainWindow.resize(550, 391)
         MainWindow.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
         MainWindow.setStyleSheet("*{\n"
 "    font-family: century gothic;\n"
@@ -37,12 +37,19 @@ class Ui_MainWindow(object):
 "}\n"
 "QPushButton{\n"
 "    border-radius: 15px;\n"
-"    background: red;\n"
+"    background: rgb(0, 170, 127);\n"
 "    color: white;\n"
 "}\n"
 "QPushButton:hover{\n"
 "    background: #333;\n"
-"    color: red;\n"
+"    color: rgb(0, 170, 127);\n"
+"}\n"
+"#logOffButton{\n"
+"    background: rgb(255, 98, 51);\n"
+"}\n"
+"#logOffButton:hover{\n"
+"    background: #333;\n"
+"    color: rgb(255, 98, 51);\n"
 "}\n"
 "QInputDialog{\n"
 "    width: 50px;\n"
@@ -88,19 +95,16 @@ class Ui_MainWindow(object):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.scrollArea = QtWidgets.QScrollArea(self.frame)
-        self.scrollArea.setGeometry(QtCore.QRect(20, 50, 261, 201))
+        self.scrollArea.setGeometry(QtCore.QRect(20, 50, 261, 241))
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 261, 201))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 261, 241))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.updateButton = QtWidgets.QPushButton(self.frame)
         self.updateButton.setGeometry(QtCore.QRect(310, 50, 181, 41))
         self.updateButton.setObjectName("updateButton")
-        self.logOffButton = QtWidgets.QPushButton(self.frame)
-        self.logOffButton.setGeometry(QtCore.QRect(310, 150, 181, 41))
-        self.logOffButton.setObjectName("logOffButton")
         self.exitButton = QtWidgets.QToolButton(self.frame)
         self.exitButton.setGeometry(QtCore.QRect(470, 10, 41, 31))
         self.exitButton.setText("")
@@ -114,14 +118,17 @@ class Ui_MainWindow(object):
         self.createServerButton.setGeometry(QtCore.QRect(310, 100, 181, 41))
         self.createServerButton.setObjectName("createServerButton")
         self.downloadButton = QtWidgets.QPushButton(self.frame)
-        self.downloadButton.setGeometry(QtCore.QRect(310, 200, 181, 41))
+        self.downloadButton.setGeometry(QtCore.QRect(310, 150, 181, 41))
         self.downloadButton.setObjectName("downloadButton")
         self.uploadButton = QtWidgets.QPushButton(self.frame)
-        self.uploadButton.setGeometry(QtCore.QRect(310, 250, 181, 41))
+        self.uploadButton.setGeometry(QtCore.QRect(310, 200, 181, 41))
         self.uploadButton.setObjectName("uploadButton")
+        self.logOffButton = QtWidgets.QPushButton(self.frame)
+        self.logOffButton.setGeometry(QtCore.QRect(310, 250, 181, 41))
+        self.logOffButton.setObjectName("logOffButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 756, 29))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 550, 29))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -136,7 +143,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label.setText(_translate("MainWindow", "Список серверов"))
         self.updateButton.setText(_translate("MainWindow", "Обновить"))
-        self.logOffButton.setText(_translate("MainWindow", "Выйти с аккаунта"))
         self.createServerButton.setText(_translate("MainWindow", "Создать сервер"))
         self.downloadButton.setText(_translate("MainWindow", "Скачать"))
         self.uploadButton.setText(_translate("MainWindow", "Загрузить"))
+        self.logOffButton.setText(_translate("MainWindow", "Выйти с аккаунта"))

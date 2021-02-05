@@ -24,12 +24,12 @@ class Ui_MainWindow(object):
 "}\n"
 "QPushButton{\n"
 "    border-radius: 15px;\n"
-"    background: red;\n"
+"    background: rgb(0, 170, 127);\n"
 "    color: white;\n"
 "}\n"
 "QPushButton:hover{\n"
 "    background: #333;\n"
-"    color: red;\n"
+"    color: rgb(0, 170, 127);\n"
 "}\n"
 "#textBrowser{\n"
 "    font-size: 16px;\n"
@@ -90,10 +90,16 @@ class Ui_MainWindow(object):
         self.exitButton.setAutoRepeatDelay(300)
         self.exitButton.setObjectName("exitButton")
         self.tree = QtWidgets.QTreeWidget(self.frame)
-        self.tree.setGeometry(QtCore.QRect(20, 90, 711, 271))
+        self.tree.setGeometry(QtCore.QRect(20, 90, 711, 221))
         self.tree.setStyleSheet("background: white;")
         self.tree.setObjectName("tree")
         self.tree.headerItem().setText(0, "1")
+        self.banButton = QtWidgets.QPushButton(self.frame)
+        self.banButton.setGeometry(QtCore.QRect(20, 330, 93, 41))
+        self.banButton.setObjectName("banButton")
+        self.createUserButton = QtWidgets.QPushButton(self.frame)
+        self.createUserButton.setGeometry(QtCore.QRect(140, 330, 311, 41))
+        self.createUserButton.setObjectName("createUserButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 773, 29))
@@ -110,3 +116,5 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label_3.setText(_translate("MainWindow", "Админ панель"))
+        self.banButton.setText(_translate("MainWindow", "Бан"))
+        self.createUserButton.setText(_translate("MainWindow", "Создать нового пользователя"))
