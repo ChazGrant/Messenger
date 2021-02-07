@@ -74,6 +74,15 @@ def showError(text):
     msg.setWindowTitle("Error")
     msg.exec_()
 
+def showMessage(text):
+    '''
+    Создаёт окно с ошибкой и выводим текст
+    '''
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Information)
+    msg.setText(text)
+    msg.setWindowTitle("Info")
+    msg.exec_()
 
 def beautifyText(text, searchText):
     if searchText == "":
@@ -134,17 +143,19 @@ class LoadMessagesThread(QThread):
 class LoadUsersThread(QThread):
     load_finished = pyqtSignal(object)
 
-    def __init__(self, url, serv_id):
+    def __init__(self, url, serv_id, username):
         super().__init__()
 
-        self.url = url
+        self.__url = url
         self.server_id = serv_id
+        self.username = username
 
     def run(self):
         try:
-            rs = requests.get(self.url,
+            rs = requests.get(self.__url,
                           json={
-                              "server_id": self.server_id
+                              "server_id": self.server_id,
+                              "username": self.username
                           })
         except:
             rs = False
@@ -280,16 +291,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer.start(1000)
         # self.update()
 
-    def showMessage(self, text):
-        '''
-        Создаёт окно с ошибкой и выводим текст
-        '''
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText(text)
-        msg.setWindowTitle("Info")
-        msg.exec_()
-
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
 
@@ -328,6 +329,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             if okPressed:
                 if fileName == "":
                     fileName = fileNames[0].split("/")[-1]
+                else:
+                    fileName = fileName + "." + fileNames[0].split("/")[-1].split('.')[1]
                 with open(fileNames[0], "rb") as file:
                     upl = requests.get(self.__url + "/upload", data=file.read(), params={
                         "filename": fileName,
@@ -354,7 +357,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if not self.isSearchEnabled:
             try:
                 self.usersThread = LoadUsersThread(
-                    self.__url + "/get_users", self.server_id)
+                    self.__url + "/get_users", self.server_id, self.username)
                 self.usersThread.load_finished.connect(self.update_users)
                 self.usersThread.finished.connect(self.usersThread.deleteLater)
                 self.usersThread.start()
@@ -377,9 +380,15 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if rs.status_code == 200:
             res = rs.json()['res']
             isLogged = rs.json()['userIsLoggedIn']
+            print(rs.json()["isBanned"])
+            if int(rs.json()["isBanned"]):
+                self.timer.stop()
+                showError("Вы были забанены")
+                self.exit()
+                return self.close()
             self.users = QTextBrowser()
+            self.users.setFixedSize(self.scrollArea.width(), self.scrollArea.height())
 
-            # Протестить
             # sample:
             # ['Илья 0 1611867749.54902', 'Тест 0 1611865145.06428', 'qwerty 0 1612211290.75964', '123 0 1611867690.18362']
 
@@ -578,9 +587,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
                         self.textBrowser.append(searchedMessage["message"])
                         self.textBrowser.append("")
-                    self.showMessage("Кол-во найденных совпадений: " + str(self.matches))
+                    showMessage("Кол-во найденных совпадений: " + str(self.matches))
                 else:
-                    return self.showMessage("Ваш запрос не выдал результатов(")
+                    return showMessage("Ваш запрос не выдал результатов(")
         else:
             return showError("Поле поиска не может быть пустым")
 
@@ -697,6 +706,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             if okPressed:
                 if fileName == "":
                     fileName = fileNames[0].split("/")[-1]
+                else:
+                    fileName = fileName + "." + fileNames[0].split("/")[-1].split('.')[1]
                 with open(fileNames[0], "rb") as file:
                     upl = requests.get(self.__url + "/upload", data=file.read(), params={
                         "filename": fileName,
@@ -763,6 +774,9 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
                 if "badPassword" in response.json():
                     return showError("Неверный пароль")
 
+                if "isBanned" in response.json():
+                    return showError("Вы были забанены на этом сервере")
+
                 if "someProblems" in response.json():
                     return showError(str(response.json()))
 
@@ -789,9 +803,12 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.tree.setHeaderLabels(['Пользователи в данном чате'])
+        self.insertUsers()
+
+    def insertUsers(self):
         res = requests.get(self.__url + "/get_users", json={
-                              "server_id": self.server_id
-                          })
+                            "server_id": self.server_id
+                        })
         # self.tree.addTopLevelItem(QtWidgets.QTreeWidgetItem(["fae", "qwe"]))
         '''
             0 - username
@@ -799,11 +816,13 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
             2 - lastSeen
             3 - entryTime
             4 - timeSpent
+            5 - isBanned
         '''
         users = res.json()['res']
         for user in users:
             u = user.split()
             status = "Online" if int(u[1]) else "Offline"
+            status = "Banned" if int(u[5]) else status
             us = QtWidgets.QTreeWidgetItem(self.tree, [u[0]])
             
             QtWidgets.QTreeWidgetItem(us, [f"Статус: {status}"])
@@ -843,29 +862,40 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-
     def banUser(self):
         if not (self.tree.selectedItems()):
             return
         if not (self.tree.selectedItems()[0].parent()):
-            response = requests.get(self.__url + "/ban", json={
+            response = requests.get(self.__url + "/ban_user", json={
                 "username": self.tree.selectedItems()[0].text(0),
                 "server_id": self.server_id
             })
-            print(self.tree.selectedItems()[0].text(0) + " был забанен")
-            self.tree.invisibleRootItem().removeChild(self.tree.selectedItems()[0])
+            if "someProblems" in response.json():
+                return showError("Возникли неполадки с севрером")
+
+            banned = "забанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
+                == "Offline" else "разбанен"
+
+            showMessage(self.tree.selectedItems()[0].text(0) + " был " + banned)
+            self.tree.clear()
+            self.insertUsers()
     
     def createUser(self):
-        self.main = userCreatorForm()
+        self.main = userCreatorForm(self.server_id, self.__url)
         # self.main.setFixedSize()
         self.main.show()
+        self.tree.clear()
+        self.insertUsers()
 
 class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
-    def __init__(self):
+    def __init__(self, server_id, url=URL):
         super().__init__()
         self.setupUi(self)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.server_id = server_id
+        self.__url = url
 
         self.createButton.pressed.connect(self.createUser)
         self.exitButton.pressed.connect(self.close)
@@ -879,14 +909,22 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
         self.oldPos = event.globalPos()
 
     def createUser(self):
-        if self.usernameText.text() == "" or self.passwordText.text() == "":
-            print("Не все поля заполнены")
-        else:
-            # Проверка на занятое имя
-            if self.issueAdminRights.isChecked():
-                print("Создан админ")
-            else:
-                print("Создан обычный пользователь")
+        response = requests.get(self.__url + "/create_user", json={
+            "username": self.usernameText.text(),
+            "password": self.passwordText.text(),
+            "server_id": self.server_id,
+            "issueRights": self.issueAdminRights.isChecked()
+        })
+
+        if "isNotFilled" in response.json():
+            return showError("Не все поля заполнены")
+        if "nameIsTaken" in response.json():
+            return showError("Данное имя пользователя занято")
+        if "badPassword" in response.json():
+            return showError("Пароль должен иметь специальные символы, буквы и цифры. Длина пароля от 8 до 16")
+
+        showMessage("Пользователь был создан")
+        self.close()
 
 class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
     closeDialog = pyqtSignal()
@@ -930,8 +968,12 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
         self.exitButton.pressed.connect(self.close)
 
-        self.selectButton.pressed.connect(
-            self.download)
+        self.oldPos = 0.0
+
+        self.selectButton.pressed.connect(self.download)
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         for i in items:
             self.listWidget.addItem(i)
@@ -944,16 +986,6 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-    def showMessage(self, text):
-        '''
-        Создаёт окно с ошибкой и выводим текст
-        '''
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText(text)
-        msg.setWindowTitle("Info")
-        msg.exec_()
-
     def download(self):
         neededFiles = list()
         self.downloadedFiles = dict()
@@ -962,7 +994,6 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
             neededFiles.append(item.text())
 
         for neededFile in neededFiles:
-            
             resp = requests.get(URL + "/download", json={
                 "neededFile": neededFile
             })
@@ -970,14 +1001,18 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
             filesList = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
 
             isFound = False
+
             for file in filesList:
                 if neededFile == file:
                     isFound = True
+
                     self.dial = QDialog(self)
                     label = QLabel(
-                        text=f"{file} уже скачан\nВы уверены, что хотите перезаписать данные?")
-                    accept = QPushButton(text="Да")
-                    decline = QPushButton(text="Нет")
+                        text=f"{file}<br>уже скачан")
+                    
+                        
+                    accept = QPushButton(text="Скачать заново")
+                    decline = QPushButton(text="Отменить")
 
                     accept.pressed.connect(lambda: self.accept(file, resp.content))
                     decline.pressed.connect(lambda: self.dial.close())
@@ -988,18 +1023,19 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
                     self.dial.layout().addWidget(decline)
                     self.dial.setFixedSize(310, 150)
                     self.dial.exec_()
+
             if not isFound:
                 self.downloadedFiles[neededFile] = resp.content
             
-
         if self.downloadedFiles:
             info = ""
+            
             for fileName in self.downloadedFiles.keys():
                 with open("Загрузки/" + str(fileName), "wb") as file:
                     file.write(self.downloadedFiles[fileName])
                     info = info + str(fileName) + ", "
-            self.showMessage(f"Файлы {info[:-2]} были успешно скачаны")
-            
+
+            showMessage(f"Файлы {info[:-2]} были успешно скачаны")
 
     def accept(self, fileName, fileContent):
         self.dial.close()

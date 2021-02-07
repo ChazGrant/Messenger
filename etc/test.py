@@ -7,6 +7,20 @@ import hashlib
 import os
 import math
 
+print(str( int( not( int('1') ) ) ))
+
+files = [f for _, _, f in os.walk("static/" + "JUST TALKING")][0]
+print(files)
+exit()
+print(hashlib.md5("TRYTOGUESS".encode()).hexdigest())
+exit()
+with sq.connect("Messenger.db") as conn:
+    cur = conn.cursor()
+    cur.execute(
+        f"UPDATE servers SET `admins` = `admins` || ' ' || 'testAdmin', `users` = `users` || ' ' || 'testAdmin' WHERE server_id = 1"
+    )
+    conn.commit()
+exit()
 def index(text, searchText):
     try:
         text.index(searchText)

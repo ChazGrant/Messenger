@@ -1,25 +1,33 @@
 import requests
+import os
 
-filename = "testExcel.xlsx"
+files = [file for _, _, file in os.walk("static/" + "JUST TALKING")][0]
 
-with open("Загрузки/" + filename, "rb") as file:
 
-    content = file.read()
+print(files)
 
-    res = requests.get("http://127.0.0.1:5000/upload", data=content, params={
-        "name": "fff.xlsx"
-    })
 
-    if "nameIsTaken" in res.json():
-        print("Cant't upload this file, try to change the name of it")
 
-# res = requests.get("http://127.0.0.1:5000/download", json={
-#     'filename': 'send.docx'
-# })
-# if res.status_code == 200:
-#     with open("Загрузки/receive.docx", "wb") as out:
-#         out.write(res.content)
-# output.write(res.content)
+# filename = "testExcel.xlsx"
 
-# with open(file) as file:
-# 	file.close()
+# with open("Загрузки/" + filename, "rb") as file:
+
+#     content = file.read()
+
+#     res = requests.get("http://127.0.0.1:5000/upload", data=content, params={
+#         "name": "fff.xlsx"
+#     })
+
+#     if "nameIsTaken" in res.json():
+#         print("Cant't upload this file, try to change the name of it")
+
+# # res = requests.get("http://127.0.0.1:5000/download", json={
+# #     'filename': 'send.docx'
+# # })
+# # if res.status_code == 200:
+# #     with open("Загрузки/receive.docx", "wb") as out:
+# #         out.write(res.content)
+# # output.write(res.content)
+
+# # with open(file) as file:
+# # 	file.close()

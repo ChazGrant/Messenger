@@ -26,8 +26,7 @@ def get_server_name_(server_id):
         cur = conn.cursor()
         server_name = cur.execute(
             f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
-    return {
-        "server_name": server_name,}
+        return server_name
 
 @app.route("/")
 def hello():
@@ -63,7 +62,7 @@ def create_server():
         for serverName in serverNames:
             if servName in serverName:
                 return {"nameIsTaken": True}
-        cur.execute("INSERT INTO servers(`server_name`, `admin`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
+        cur.execute("INSERT INTO servers(`server_name`, `admins`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
                     (servName, servAdmin, servAdmin, time.time(), hash_(servPass)))
         conn.commit()
 
@@ -92,6 +91,14 @@ def connect():
                 f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
 
             if rightPassword == password:
+                server_id_ = cur.execute(
+                    f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
+                isBanned = cur.execute(
+                    f"SELECT `isBanned` FROM users WHERE `username` LIKE'%{username}%';").fetchone()[0].split()[server_id_]
+                    
+                if int(isBanned):
+                    return {"isBanned": True}
+
                 serv_users = cur.execute(
                     f"SELECT `users` FROM servers WHERE `server_id` = { server_id };").fetchone()[0]
 
@@ -112,8 +119,6 @@ def connect():
                 # Обновление онлайна и времени входа
                 else:
                     # Получаем индекс сервера и изменяем значения по индексу
-                    server_id_ = cur.execute(
-                            f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
                     isOnline = cur.execute(
                             f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split()
                     entryTime = cur.execute(
@@ -153,6 +158,35 @@ def login():
             return {'ok': True}
         return {'invalidData': True}
 
+@app.route("/create_user")
+def create_user():
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        username = request.json['username']
+        password = request.json['password']
+        issueRights = int(request.json['issueRights'])
+        server_id = int(request.json['server_id'])
+
+        pattern = r"^(?=.*[\W].*)(?=.*[0-9].*)(?=.*[a-zA-Z].*)[0-9a-zA-Z\W_]{8,16}?$"
+        password = re.sub(r"[\s]+", "_", password)
+
+        if username == "" or password == "":
+            return {'isNotFilled': True}
+        if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{ username }';").fetchone():
+            return {'nameIsTaken': True}
+        if re.match(pattern, password):
+            cur.execute(
+                "INSERT INTO users(`username`, `password`, `isOnline`, `servers_id`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned`) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",\
+                    (username, hash_(password), '0', server_id, str(time.time()), str(time.time()), '0.0', '0'))
+            conn.commit()
+            if issueRights:
+                cur.execute(
+                    f"UPDATE servers SET `admins` = `admins` || ' ' || '{username}', `users` = `users` || ' ' || '{username}' WHERE server_id = {server_id}"
+                )
+                conn.commit()
+            
+            return {'ok': True}
+    return {"badPassword": True}
 
 @app.route("/reg")
 def reg():
@@ -224,13 +258,13 @@ def get_server_name():
     server_id = request.json['server_id']
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        admin = cur.execute(
-            f"SELECT admin FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+        admins = cur.execute(
+            f"SELECT admins FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
         server_name = cur.execute(
             f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
     return {
         'server_name': server_name,
-        'rightsGranted': str(username) == str(admin)
+        'rightsGranted': str(username) in admins or str(username) == "CREATOR"
         }
 
 
@@ -248,20 +282,20 @@ def get_servers():
 
 
 @app.route("/upload")
-def upload():
+def upload():   
     try:
         server_id = request.args['server_id']
         server_name = get_server_name_(server_id)
     except:
         server_id = 0
-    
+
     data = request.data
     filename = request.args['filename']
 
     if not server_id:
-        files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+        files = [f for _, _, f in os.walk("static")][0]
     else:
-        files = [f for _, _, f in os.walk(os.getcwd() + "/static/" + str(server_name))][0]
+        files = [f for _, _, f in os.walk("static/" + str(server_name))][0]
 
     for file in files:
         if file == filename:
@@ -309,11 +343,10 @@ def get_files():
         server_id = 0
     
     if not server_id:
-        files = [f for _, _, f in os.walk(os.getcwd() + "/static")][0]
+        files = [f for _, _, f in os.walk("static")][0]
     else:
-        print("|f")
         server_name = get_server_name_(server_id)
-        files = [f for _, _, f in os.walk(os.getcwd() + "/static/" + str(server_name))][0]
+        files = [f for _, _, f in os.walk("static/" + str(server_name))][0]
     return {"allFiles": files}
 
 
@@ -348,32 +381,66 @@ def get_users():
     with sq.connect("Messenger.db") as conn:
         server_id = str(request.json["server_id"])
         cur = conn.cursor()
-        user_info = cur.execute(
-            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
-        returnList = list()
+    try:
+        username = str(request.json["username"])
+
+        server_id_ = cur.execute(
+            f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
+        userIsBanned = cur.execute(
+            f"SELECT `isBanned` FROM users WHERE `username` LIKE '%{username}%'").fetchone()[0].split()
+        isCurrentUserBanned = int(userIsBanned[server_id_])
+    except:
+        isCurrentUserBanned = 0
+
+    user_info = cur.execute(
+            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+    returnList = list()
     for user in user_info:
         server_id_ = user[1].split().index(server_id)
         isOnline = user[2].split()[server_id_]
         lastSeen = user[3].split()[server_id_]
         entryTime = user[4].split()[server_id_]
         timeSpent = user[5].split()[server_id_]
-        returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent)
+        isBanned = user[6].split()[server_id_]
+        returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
+
 
     res = sorted(returnList, key=lambda tup: tup[1], reverse=True)
 
     try:
-
-        return {
-            'res': res,
-            'userIsLoggedIn': userIsLoggedIn[server_id]
-        }
+        isLoggedIn = userIsLoggedIn[server_id]
     except:
-        return {
-            'res': res,
-            'userIsLoggedIn': 0
-        }
-    
+        isLoggedIn = 0
 
+# killme
+    return {
+        'res': res,
+        'userIsLoggedIn': isLoggedIn,
+        "isBanned": isCurrentUserBanned
+    }
+
+    
+@app.route("/ban_user")
+def ban():
+    try:
+        uname = request.json['username']
+        server_id = str(request.json['server_id'])
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            server_id_ = cur.execute(
+                    f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
+            isBanned = cur.execute(
+                    f"SELECT `isBanned` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
+            isBanned[server_id_] = (str( int( not( int(isBanned[server_id_]) ) ) ))
+
+            isBannedToStr = " ".join(isBanned)
+
+            cur.execute(
+                f"UPDATE users SET isBanned='{isBannedToStr}' WHERE `username` LIKE '%{uname}%'")
+            conn.commit()
+    except:
+        return {"someProblems": True}
+    return {"ok": True}
 
 @app.route("/disconnect")
 def disconnect():
