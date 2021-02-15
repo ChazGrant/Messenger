@@ -23,38 +23,34 @@ QMainWindow{
 }
 QPushButton{
 	border-radius: 15px;
-	background: red;
 	color: white;
 }
-QPushButton:hover{
+#searchButton:hover{
 	background: #333;
-	color: red;
+	color: rgb(0, 170, 127);
 }
-#textBrowser{
-	font-size: 16px;
+#cancelButton:hover{
+	background: #333;
+	color: rgb(255, 98, 51);
 }
 QToolButton{
 	border-radius: 60px;
-	
-}
-QLabel{
-	color: white;
 }
 QFrame{
 	background: #333;
 	border-radius: 15px;
 }
-QLineEdit{
-	padding-bottom: 5px;
-	background: transparent;
-	border: none;
-	color: #717072;
-	border-bottom: 1px solid #717072;
-}
+
 #exitButton{
 	/*background-color: red;*/
 	border-radius: 15px;
 	background-size: 5px;
+}
+#searchButton{
+	background: rgb(0, 170, 127);
+}
+#cancelButton{
+	background: rgb(255, 98, 51);	
 }
 QCheckBox{
 	color: lightgrey;
@@ -110,6 +106,9 @@ QCheckBox{
        <width>111</width>
        <height>41</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
      </property>
      <property name="text">
       <string>Поиск</string>

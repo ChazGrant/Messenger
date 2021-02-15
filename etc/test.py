@@ -7,19 +7,46 @@ import hashlib
 import os
 import math
 
-print(str( int( not( int('1') ) ) ))
+invitesToChat = [
+    {
+        "user": True,
+        "serverName": "fasf"
+    },
+    {
+        "userm": True,
+        "serverName": "fasf"
+    },
+    {
+        "usera": True,
+        "serverName": "fasf"
+    }
+]
 
-files = [f for _, _, f in os.walk("static/" + "JUST TALKING")][0]
-print(files)
+print()
+
+for count in range(len(invitesToChat)):
+        if "user" in invitesToChat[count].keys():
+            invitesToChat[count]["user"] = False
+print(invitesToChat)
 exit()
-print(hashlib.md5("TRYTOGUESS".encode()).hexdigest())
-exit()
+# print(str( int( not( int('1') ) ) ))
+
+# files = [f for _, _, f in os.walk("static/" + "JUST TALKING")][0]
+# print(files)
+# exit()
+# print(hashlib.md5("TRYTOGUESS".encode()).hexdigest())
+# exit()
+# with sq.connect("Messenger.db") as conn:
+#     cur = conn.cursor()
+#     cur.execute(
+#         f"UPDATE servers SET `admins` = `admins` || ' ' || 'testAdmin', `users` = `users` || ' ' || 'testAdmin' WHERE server_id = 1"
+#     )
+#     conn.commit()
+# exit()
 with sq.connect("Messenger.db") as conn:
     cur = conn.cursor()
-    cur.execute(
-        f"UPDATE servers SET `admins` = `admins` || ' ' || 'testAdmin', `users` = `users` || ' ' || 'testAdmin' WHERE server_id = 1"
-    )
-    conn.commit()
+    print(cur.execute(f"SELECT `users` FROM servers WHERE `server_id` = 1").fetchall()[0][0].split())
+
 exit()
 def index(text, searchText):
     try:
@@ -44,13 +71,14 @@ def beautifyText(text, searchText):
 
         currentIndex += findIndex + 1
         
-    newStr += text[currentIndex:]
+    newStr += text[findIndex + len(searchText):]
     return newStr
     
 
 string = "Выводит информацию о нужной команде"
-word = "а"
-print(word in string)
+word = "инф"
+print(word)
+print(beautifyText(string, word))
 exit()
 print(beautifyText(string, word))
 exit()

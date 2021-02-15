@@ -26,6 +26,9 @@
 	border-radius: 15px;
 	background-size: 5px;
 }
+QScrollArea{
+	background-color: #333;
+}
 QMainWindow{
 	background-color: transparent;
 }
@@ -128,6 +131,9 @@ QInputDialog QPushButton:hover{
        <height>241</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">background: transparent;</string>
+     </property>
      <property name="widgetResizable">
       <bool>true</bool>
      </property>
@@ -147,7 +153,7 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>310</x>
        <y>50</y>
-       <width>181</width>
+       <width>201</width>
        <height>41</height>
       </rect>
      </property>
@@ -183,7 +189,7 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>310</x>
        <y>100</y>
-       <width>181</width>
+       <width>201</width>
        <height>41</height>
       </rect>
      </property>
@@ -196,7 +202,7 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>310</x>
        <y>150</y>
-       <width>181</width>
+       <width>201</width>
        <height>41</height>
       </rect>
      </property>
@@ -209,7 +215,7 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>310</x>
        <y>200</y>
-       <width>181</width>
+       <width>201</width>
        <height>41</height>
       </rect>
      </property>
@@ -222,7 +228,7 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>310</x>
        <y>250</y>
-       <width>181</width>
+       <width>201</width>
        <height>41</height>
       </rect>
      </property>

@@ -71,10 +71,6 @@ class Ui_MainWindow(object):
 "#searchButton{\n"
 "    border-radius: 15px;\n"
 "    background-size: 5px;\n"
-"}\n"
-"#searchButton_2{\n"
-"    border-radius: 15px;\n"
-"    background-size: 5px;\n"
 "}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -115,13 +111,13 @@ class Ui_MainWindow(object):
         self.clearMessageButton.setGeometry(QtCore.QRect(580, 520, 121, 51))
         self.clearMessageButton.setObjectName("clearMessageButton")
         self.scrollArea = QtWidgets.QScrollArea(self.frame)
-        self.scrollArea.setGeometry(QtCore.QRect(900, 70, 251, 301))
+        self.scrollArea.setGeometry(QtCore.QRect(900, 70, 251, 281))
         self.scrollArea.setAutoFillBackground(False)
         self.scrollArea.setStyleSheet("background-color: lightgrey;")
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 251, 301))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 251, 281))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.exitButton = QtWidgets.QToolButton(self.frame)
@@ -140,11 +136,11 @@ class Ui_MainWindow(object):
         self.abortSearchButton.setGeometry(QtCore.QRect(450, 10, 201, 51))
         self.abortSearchButton.setObjectName("abortSearchButton")
         self.isOnline = QtWidgets.QRadioButton(self.frame)
-        self.isOnline.setGeometry(QtCore.QRect(900, 390, 111, 31))
+        self.isOnline.setGeometry(QtCore.QRect(900, 370, 111, 31))
         self.isOnline.setChecked(True)
         self.isOnline.setObjectName("isOnline")
         self.isOffline = QtWidgets.QRadioButton(self.frame)
-        self.isOffline.setGeometry(QtCore.QRect(1010, 390, 151, 31))
+        self.isOffline.setGeometry(QtCore.QRect(1010, 370, 151, 31))
         self.isOffline.setObjectName("isOffline")
         self.uploadButton = QtWidgets.QPushButton(self.frame)
         self.uploadButton.setGeometry(QtCore.QRect(710, 520, 191, 51))
@@ -161,6 +157,16 @@ class Ui_MainWindow(object):
         self.showUsersButton.setShortcut("")
         self.showUsersButton.setAutoRepeatDelay(300)
         self.showUsersButton.setObjectName("showUsersButton")
+        self.messagesAmount = QtWidgets.QLabel(self.frame)
+        self.messagesAmount.setGeometry(QtCore.QRect(980, 420, 81, 20))
+        self.messagesAmount.setText("")
+        self.messagesAmount.setObjectName("messagesAmount")
+        self.backButton = QtWidgets.QPushButton(self.frame)
+        self.backButton.setGeometry(QtCore.QRect(880, 410, 91, 31))
+        self.backButton.setObjectName("backButton")
+        self.forwardButton = QtWidgets.QPushButton(self.frame)
+        self.forwardButton.setGeometry(QtCore.QRect(1070, 410, 91, 31))
+        self.forwardButton.setObjectName("forwardButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1299, 29))
@@ -175,7 +181,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MyMessanger"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "MyMessenger"))
         self.label_2.setText(_translate("MainWindow", "Пользователи в данном чате"))
         self.sendButton.setText(_translate("MainWindow", "Отправить"))
         self.exitAccountButton.setText(_translate("MainWindow", "Выйти с аккаунта"))
@@ -187,3 +193,5 @@ class Ui_MainWindow(object):
         self.isOffline.setText(_translate("MainWindow", "Оффлайн"))
         self.uploadButton.setText(_translate("MainWindow", "Загрузить файлы"))
         self.downloadButton.setText(_translate("MainWindow", "Скачать файлы"))
+        self.backButton.setText(_translate("MainWindow", "Назад"))
+        self.forwardButton.setText(_translate("MainWindow", "Вперёд"))

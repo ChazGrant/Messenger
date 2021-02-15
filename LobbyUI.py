@@ -25,6 +25,9 @@ class Ui_MainWindow(object):
 "    border-radius: 15px;\n"
 "    background-size: 5px;\n"
 "}\n"
+"QScrollArea{\n"
+"    background-color: #333;\n"
+"}\n"
 "QMainWindow{\n"
 "    background-color: transparent;\n"
 "}\n"
@@ -96,6 +99,7 @@ class Ui_MainWindow(object):
         self.label.setObjectName("label")
         self.scrollArea = QtWidgets.QScrollArea(self.frame)
         self.scrollArea.setGeometry(QtCore.QRect(20, 50, 261, 241))
+        self.scrollArea.setStyleSheet("background: transparent;")
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
@@ -103,7 +107,7 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.updateButton = QtWidgets.QPushButton(self.frame)
-        self.updateButton.setGeometry(QtCore.QRect(310, 50, 181, 41))
+        self.updateButton.setGeometry(QtCore.QRect(310, 50, 201, 41))
         self.updateButton.setObjectName("updateButton")
         self.exitButton = QtWidgets.QToolButton(self.frame)
         self.exitButton.setGeometry(QtCore.QRect(470, 10, 41, 31))
@@ -115,16 +119,16 @@ class Ui_MainWindow(object):
         self.exitButton.setAutoRepeatDelay(300)
         self.exitButton.setObjectName("exitButton")
         self.createServerButton = QtWidgets.QPushButton(self.frame)
-        self.createServerButton.setGeometry(QtCore.QRect(310, 100, 181, 41))
+        self.createServerButton.setGeometry(QtCore.QRect(310, 100, 201, 41))
         self.createServerButton.setObjectName("createServerButton")
         self.downloadButton = QtWidgets.QPushButton(self.frame)
-        self.downloadButton.setGeometry(QtCore.QRect(310, 150, 181, 41))
+        self.downloadButton.setGeometry(QtCore.QRect(310, 150, 201, 41))
         self.downloadButton.setObjectName("downloadButton")
         self.uploadButton = QtWidgets.QPushButton(self.frame)
-        self.uploadButton.setGeometry(QtCore.QRect(310, 200, 181, 41))
+        self.uploadButton.setGeometry(QtCore.QRect(310, 200, 201, 41))
         self.uploadButton.setObjectName("uploadButton")
         self.logOffButton = QtWidgets.QPushButton(self.frame)
-        self.logOffButton.setGeometry(QtCore.QRect(310, 250, 181, 41))
+        self.logOffButton.setGeometry(QtCore.QRect(310, 250, 201, 41))
         self.logOffButton.setObjectName("logOffButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(707, 464)
+        MainWindow.resize(467, 288)
         MainWindow.setStyleSheet("*{\n"
 "    font-family: century gothic;\n"
 "    font-size: 20px;\n"
@@ -24,38 +24,34 @@ class Ui_MainWindow(object):
 "}\n"
 "QPushButton{\n"
 "    border-radius: 15px;\n"
-"    background: red;\n"
 "    color: white;\n"
 "}\n"
-"QPushButton:hover{\n"
+"#searchButton:hover{\n"
 "    background: #333;\n"
-"    color: red;\n"
+"    color: rgb(0, 170, 127);\n"
 "}\n"
-"#textBrowser{\n"
-"    font-size: 16px;\n"
+"#cancelButton:hover{\n"
+"    background: #333;\n"
+"    color: rgb(255, 98, 51);\n"
 "}\n"
 "QToolButton{\n"
 "    border-radius: 60px;\n"
-"    \n"
-"}\n"
-"QLabel{\n"
-"    color: white;\n"
 "}\n"
 "QFrame{\n"
 "    background: #333;\n"
 "    border-radius: 15px;\n"
 "}\n"
-"QLineEdit{\n"
-"    padding-bottom: 5px;\n"
-"    background: transparent;\n"
-"    border: none;\n"
-"    color: #717072;\n"
-"    border-bottom: 1px solid #717072;\n"
-"}\n"
+"\n"
 "#exitButton{\n"
 "    /*background-color: red;*/\n"
 "    border-radius: 15px;\n"
 "    background-size: 5px;\n"
+"}\n"
+"#searchButton{\n"
+"    background: rgb(0, 170, 127);\n"
+"}\n"
+"#cancelButton{\n"
+"    background: rgb(255, 98, 51);    \n"
 "}\n"
 "QCheckBox{\n"
 "    color: lightgrey;\n"
@@ -75,6 +71,7 @@ class Ui_MainWindow(object):
         self.checkBox.setObjectName("checkBox")
         self.searchButton = QtWidgets.QPushButton(self.frame)
         self.searchButton.setGeometry(QtCore.QRect(50, 160, 111, 41))
+        self.searchButton.setStyleSheet("")
         self.searchButton.setObjectName("searchButton")
         self.checkBox_2 = QtWidgets.QCheckBox(self.frame)
         self.checkBox_2.setGeometry(QtCore.QRect(50, 120, 321, 20))
@@ -95,7 +92,7 @@ class Ui_MainWindow(object):
         self.exitButton.setObjectName("exitButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 707, 29))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 467, 29))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
