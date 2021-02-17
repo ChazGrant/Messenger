@@ -90,7 +90,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>250</y>
+       <y>270</y>
        <width>401</width>
        <height>41</height>
       </rect>
@@ -103,7 +103,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>310</y>
+       <y>330</y>
        <width>401</width>
        <height>41</height>
       </rect>
@@ -171,6 +171,32 @@ QLineEdit{
      </property>
      <property name="autoRepeatDelay">
       <number>300</number>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="rememberMe">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>230</y>
+       <width>21</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>230</y>
+       <width>181</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Запомнить меня</string>
      </property>
     </widget>
    </widget>

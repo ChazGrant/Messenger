@@ -8,9 +8,9 @@ from bot import *
 import sqlite3 as sq
 import os
 import zipfile
+import random
 
-conn = sq.connect("Messenger.db")
-cur = conn.cursor()
+ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
@@ -487,6 +487,49 @@ def get_messages():
                 "invitations": invitesToChat
             }
 
+############# SESSION #################
+@app.route("/create_session")
+def create_session():
+    try:
+        username = request.json["username"]
+        usernameForHash = username
+
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            isUsernameInUse = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%'").fetchone()
+
+            for i in range(16):
+                usernameForHash += random.choice(ALPHABET)
+            saltedHash = hashlib.md5(usernameForHash.encode()).hexdigest()
+
+            if isUsernameInUse:
+                cur.execute(f"UPDATE sessions SET `hash` = '{saltedHash}' WHERE `username` LIKE '%{username}%'").fetchone()
+                conn.commit()
+            else:
+                cur.execute("INSERT INTO sessions(`username`, `hash`) VALUES(?, ?)", (username, saltedHash))
+                conn.commit()
+            
+            return {
+                "hash": encrypt(saltedHash, 314)
+            }
+
+    except Exception as e:
+        return {
+            "someProblems": str(e)
+        }
+
+@app.route("/check_for_session")
+def check_for_session():
+    username = decrypt(request.json["username"], 314)
+    saltedHash = decrypt(request.json["hash"], 314)
+
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        isValid = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%' AND `hash` LIKE '%{saltedHash}%'").fetchone()
+
+        return {"username": username} if isValid else {"badHash": True}
+
+############# SESSION #################
 
 @app.route("/get_users")
 def get_users():

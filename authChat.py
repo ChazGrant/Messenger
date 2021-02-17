@@ -12,6 +12,7 @@ import searchFormUI
 import userCreatorUI
 import privateChatUI
 
+import json
 import requests
 import hashlib
 import datetime
@@ -62,6 +63,20 @@ sizes = \
         }
 }
 
+def loadData(url):
+    try:
+        with open("userdata/data.json", "r") as file:
+            savedData = json.load(file)
+        if "hash" not in savedData:
+            return 0
+
+        response = requests.get(url + "/check_for_session", json={
+            "username": savedData["username"],
+            "hash": savedData["hash"]
+        })
+        return response.json()["username"] if "username" in response.json() else 0
+    except:
+        return 0
 
 def showError(text):
     '''
@@ -164,11 +179,12 @@ class LoadUsersThread(QThread):
 
 
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
-    def __init__(self, url=URL):
+    def __init__(self, url=URL, key=KEY):
         super().__init__()
         self.setupUi(self)
 
         self.oldPos = self.pos()
+        self.__key = key
         self.__url = url
 
         self.loginButton.pressed.connect(self.login)
@@ -177,6 +193,20 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+    def saveData(self, username):
+        response = requests.get(self.__url + "/create_session", json={
+                "username": username
+            })
+        if "someProblems" in response.json():
+            print(response.json()["someProblems"])
+            return 0
+        with open("userdata/data.json", "w+") as file:  
+            json.dump({
+                "username": encrypt(username, self.__key),
+                "hash": response.json()["hash"]
+            }, file) 
+            return 1
 
     def clearSpaces(self, string):
         string = string.replace(' ', '')
@@ -214,6 +244,11 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 return showError("Неверное имя пользователя и/или пароль")
 
             self.close()
+            if self.rememberMe.isChecked():
+                response = self.saveData(self.username)
+                if not response:
+                    showError("Ваши данные не были сохранены")
+
             self.main = Lobby(self.username, self.__url)
             return self.main.show()
         else:
@@ -239,9 +274,13 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             if "nameIsTaken" in response.json():
                 return showError("Данное имя пользователя уже занято")
 
-            # Закрываем текущее окно
             self.close()
-            # Инициализируем новое окно, передавая логин и пароль и открываем его
+            
+            if self.rememberMe.isChecked():
+                response = self.saveData(self.username)
+                if not response:
+                    showError("Ваши данные не были сохранены")
+
             self.main = Lobby(self.username, self.__url)
             return self.main.show()
         else:
@@ -708,6 +747,13 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 "server_id": self.server_id
             }
         )
+
+        try:
+            with open("userdata/data.json", "w") as js:
+                js.write("")
+        except:
+            pass
+
         self.close()
         self.timer.stop()
         self.main = Auth()
@@ -771,6 +817,13 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
     def logOff(self):
         self.close()
+        
+        try:
+            with open("userdata/data.json", "w") as js:
+                js.write("")
+        except:
+            pass
+
         self.main = Auth()
         return self.main.show()
 
@@ -983,24 +1036,34 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
             return
         if self.server_id == 0:
             if (self.tree.selectedItems()[0].parent()) and (not(self.tree.selectedItems()[0].parent().parent())):
-                print(self.tree.selectedItems()[0].parent().text(0))
-                # TODO
-            return
+                response = requests.get(self.__url + "/ban_user", json={
+                    "username": self.tree.selectedItems()[0].text(0),
+                    "server_id": self.tree.selectedItems()[0].parent().text(0)
+                })
+                if "someProblems" in response.json():
+                    return showError("Возникли неполадки с севрером")
 
-        if not (self.tree.selectedItems()[0].parent()):
-            response = requests.get(self.__url + "/ban_user", json={
-                "username": self.tree.selectedItems()[0].text(0),
-                "server_id": self.server_id
-            })
-            if "someProblems" in response.json():
-                return showError("Возникли неполадки с севрером")
+                banned = "разбанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
+                    == "Banned" else "забанен"
+                showMessage(self.tree.selectedItems()[0].text(0) + " был " + banned)
+                self.tree.clear()
+                self.insertUsers()
 
-            banned = "забанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
-                == "Offline" else "разбанен"
+        else:
+            if not (self.tree.selectedItems()[0].parent()):
+                response = requests.get(self.__url + "/ban_user", json={
+                    "username": self.tree.selectedItems()[0].text(0),
+                    "server_id": self.server_id
+                })
+                if "someProblems" in response.json():
+                    return showError("Возникли неполадки с севрером")
 
-            showMessage(self.tree.selectedItems()[0].text(0) + " был " + banned)
-            self.tree.clear()
-            self.insertUsers()
+                banned = "разбанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
+                    == "Banned" else "забанен"
+
+                showMessage(self.tree.selectedItems()[0].text(0) + " был " + banned)
+                self.tree.clear()
+                self.insertUsers()
     
     def createUser(self):
         self.main = userCreatorForm(self.server_id, self.isCreator, self.__url)
@@ -1268,7 +1331,15 @@ if __name__ == "__main__":
     except:
         pass
     app = QtWidgets.QApplication([])
-    window = Lobby()
-    window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
-    window.show()
-    app.exec_()
+    
+    data = loadData(URL)
+    if data != 0:
+        window = Lobby(data, URL)
+        window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
+        window.show()
+        app.exec_()
+    else:
+        window = Auth()
+        window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
+        window.show()
+        app.exec_()
