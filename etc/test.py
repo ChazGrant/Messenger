@@ -21,9 +21,15 @@ invitesToChat = [
         "serverName": "fasf"
     }
 ]
+with sq.connect("Messenger.db") as conn:
+    cur = conn.cursor()
+    allServersId = cur.execute(
+            f"SELECT server_id FROM `servers`").fetchall()
 
-print()
+    print()
 
+
+exit()
 for count in range(len(invitesToChat)):
         if "user" in invitesToChat[count].keys():
             invitesToChat[count]["user"] = False

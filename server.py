@@ -196,8 +196,7 @@ def create_user():
         cur = conn.cursor()
         username = request.json['username']
         password = request.json['password']
-        issueRights = int(request.json['issueRights'])
-        server_id = int(request.json['server_id'])
+        server_id = request.json['server_id']
 
         pattern = r"^(?=.*[\W].*)(?=.*[0-9].*)(?=.*[a-zA-Z].*)[0-9a-zA-Z\W_]{8,16}?$"
         password = re.sub(r"[\s]+", "_", password)
@@ -211,11 +210,6 @@ def create_user():
                 "INSERT INTO users(`username`, `password`, `isOnline`, `servers_id`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned`) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",\
                     (username, hash_(password), '0', server_id, str(time.time()), str(time.time()), '0.0', '0'))
             conn.commit()
-            if issueRights:
-                cur.execute(
-                    f"UPDATE servers SET `admins` = `admins` || ' ' || '{username}', `users` = `users` || ' ' || '{username}' WHERE server_id = {server_id}"
-                )
-                conn.commit()
             
             return {'ok': True}
     return {"badPassword": True}
@@ -358,11 +352,24 @@ def get_private_messages():
         "isLeft": privateChats[serverName]["isLeft"]
     }
 
+@app.route("/delete_private_server")
+def delete_private_server():
+    serverName = request.json["serverName"]
+
+    username = privateChats[serverName]["isLeft"]
+
+    del privateChats[serverName]
+
+    return {
+        "username": username
+    }
+
 @app.route("/disconnect_from_private_server")
 def disconnect_from_private_server():
     serverName = request.json["serverName"]
+    username = request.json["username"]
 
-    privateChats[serverName]["isLeft"] = True
+    privateChats[serverName]["isLeft"] = username
 
     return {
         "ok": True
@@ -497,8 +504,40 @@ def get_users():
     except:
         isCurrentUserBanned = 0
 
+    if server_id == '0':
+        allServersId = cur.execute(
+            f"SELECT server_id FROM `servers`").fetchall()
+        allServersId = " ".join(str(i[0]) for i in allServersId).split()
+
+
+        res = {}
+
+        for server_id in allServersId:
+            user_info = cur.execute(
+                f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
+            ).fetchall()
+
+            returnList = list()
+            for user in user_info:
+                server_id_ = user[1].split().index(server_id)
+                isOnline = user[2].split()[server_id_]
+                lastSeen = user[3].split()[server_id_]
+                entryTime = user[4].split()[server_id_]
+                timeSpent = user[5].split()[server_id_]
+                isBanned = user[6].split()[server_id_]
+                returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
+            
+            res[server_id] = returnList
+
+        return {
+            'res': res,
+        }
+
+            
+
     user_info = cur.execute(
-            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';").fetchall()
+            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
+        ).fetchall()
     returnList = list()
     for user in user_info:
         server_id_ = user[1].split().index(server_id)

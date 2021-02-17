@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>550</width>
-    <height>391</height>
+    <width>570</width>
+    <height>352</height>
    </rect>
   </property>
   <property name="cursor">
@@ -93,8 +93,8 @@ QInputDialog QPushButton:hover{
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>531</width>
-      <height>311</height>
+      <width>541</width>
+      <height>271</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -127,8 +127,8 @@ QInputDialog QPushButton:hover{
       <rect>
        <x>20</x>
        <y>50</y>
-       <width>261</width>
-       <height>241</height>
+       <width>281</width>
+       <height>191</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -142,8 +142,8 @@ QInputDialog QPushButton:hover{
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>261</width>
-        <height>241</height>
+        <width>281</width>
+        <height>191</height>
        </rect>
       </property>
      </widget>
@@ -151,7 +151,7 @@ QInputDialog QPushButton:hover{
     <widget class="QPushButton" name="updateButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
+       <x>330</x>
        <y>50</y>
        <width>201</width>
        <height>41</height>
@@ -184,24 +184,11 @@ QInputDialog QPushButton:hover{
       <number>300</number>
      </property>
     </widget>
-    <widget class="QPushButton" name="createServerButton">
-     <property name="geometry">
-      <rect>
-       <x>310</x>
-       <y>100</y>
-       <width>201</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Создать сервер</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="downloadButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>150</y>
+       <x>330</x>
+       <y>100</y>
        <width>201</width>
        <height>41</height>
       </rect>
@@ -213,8 +200,8 @@ QInputDialog QPushButton:hover{
     <widget class="QPushButton" name="uploadButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>200</y>
+       <x>330</x>
+       <y>150</y>
        <width>201</width>
        <height>41</height>
       </rect>
@@ -226,14 +213,60 @@ QInputDialog QPushButton:hover{
     <widget class="QPushButton" name="logOffButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>250</y>
+       <x>330</x>
+       <y>200</y>
        <width>201</width>
        <height>41</height>
       </rect>
      </property>
      <property name="text">
       <string>Выйти с аккаунта</string>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="showUsersButton">
+     <property name="geometry">
+      <rect>
+       <x>430</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: transparent</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>settings.png</normaloff>settings.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="createServerButton">
+     <property name="geometry">
+      <rect>
+       <x>280</x>
+       <y>20</y>
+       <width>31</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background:transparent</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>plus_PNG121.png</normaloff>plus_PNG121.png</iconset>
      </property>
     </widget>
    </widget>
@@ -243,7 +276,7 @@ QInputDialog QPushButton:hover{
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>550</width>
+     <width>570</width>
      <height>29</height>
     </rect>
    </property>
