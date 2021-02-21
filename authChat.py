@@ -11,6 +11,7 @@ import AdminUI
 import searchFormUI
 import userCreatorUI
 import privateChatUI
+import resources
 
 import json
 import requests
@@ -191,6 +192,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.registrateButton.pressed.connect(self.registration)
         self.exitButton.pressed.connect(self.close)
 
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -308,6 +311,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.backButton.pressed.connect(self.backward)
         self.forwardButton.pressed.connect(self.forward)
 
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+        self.showUsersButton.setIcon(QtGui.QIcon(":/resources/Images/settings.png"))
+        self.backButton.setIcon(QtGui.QIcon(":/resources/Images/left.png"))
+        self.forwardButton.setIcon(QtGui.QIcon(":/resources/Images/right.png"))
+
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -337,7 +345,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         # self.update()
 
     def checkForBoundaries(self):
-        # Check for highest available
+        # Check for highest boundary
         if self.currentLine + 1 == self.matches:
             self.forwardButton.hide()
             return 1
@@ -692,8 +700,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     textCursor.setPosition(0)
                     self.textBrowser.setTextCursor(textCursor)
 
-                    showMessage("Кол-во найденных совпадений: " + str(self.matches))
-
                     self.forwardButton.show()
                     self.messagesAmount.show()
                     self.searchButton.hide()
@@ -787,6 +793,10 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.username = username
         self.oldPos = self.pos()
 
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+        self.showUsersButton.setIcon(QtGui.QIcon(":/resources/Images/settings.png"))
+        self.createServerButton.setIcon(QtGui.QIcon(":/resources/Images/plus.png"))
+        
         if self.username != "CREATOR":
             self.createServerButton.hide()
             self.showUsersButton.hide()
@@ -948,6 +958,8 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         self.server_id = server_id
         self.isCreator = isCreator
 
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -1076,8 +1088,6 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
     def __init__(self, server_id, isCreator, url=URL):
         super().__init__()
         self.setupUi(self)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.server_id = server_id
         self.__url = url
@@ -1097,6 +1107,11 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
 
         self.createButton.pressed.connect(self.createUser)
         self.exitButton.pressed.connect(self.close)
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -1170,6 +1185,8 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.oldPos = 0.0
 
         self.selectButton.pressed.connect(self.download)
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)

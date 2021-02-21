@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="resources">
+    <file>Images/cross.png</file>
+    <file>Images/left.png</file>
+    <file>Images/plus.png</file>
+    <file>Images/right.png</file>
+    <file>Images/settings.png</file>
+    <file>Images/send.png</file>
+  </qresource>
+</RCC>

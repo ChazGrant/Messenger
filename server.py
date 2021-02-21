@@ -560,15 +560,22 @@ def get_users():
                 f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
             ).fetchall()
 
+            print(user_info)
+
             returnList = list()
             for user in user_info:
-                server_id_ = user[1].split().index(server_id)
-                isOnline = user[2].split()[server_id_]
-                lastSeen = user[3].split()[server_id_]
-                entryTime = user[4].split()[server_id_]
-                timeSpent = user[5].split()[server_id_]
-                isBanned = user[6].split()[server_id_]
-                returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
+                print(user[0])
+                print(server_id)
+                print(user[1].split())
+                print(user[2].split())
+                if server_id in user[1].split():
+                    server_id_ = user[1].split().index(server_id)
+                    isOnline = user[2].split()[server_id_]
+                    lastSeen = user[3].split()[server_id_]
+                    entryTime = user[4].split()[server_id_]
+                    timeSpent = user[5].split()[server_id_]
+                    isBanned = user[6].split()[server_id_]
+                    returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
             
             res[server_id] = returnList
 
