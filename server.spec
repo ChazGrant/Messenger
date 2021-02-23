@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['server.py'],
-             pathex=['D:\\GitHub\\Messenger'],
+             pathex=['D:\\GitHub\\Messenger PM'],
              binaries=[],
              datas=[],
              hiddenimports=[],

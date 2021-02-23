@@ -31,6 +31,9 @@ class Ui_MainWindow(object):
 "    background: #333;\n"
 "    color: rgb(0, 170, 127);\n"
 "}\n"
+"#whisperButton{\n"
+"    color: white;\n"
+"}\n"
 "#exitAccountButton, #disconnectButton{\n"
 "    background: rgb(255, 98, 51);\n"
 "}\n"
@@ -58,6 +61,13 @@ class Ui_MainWindow(object):
 "    border: none;\n"
 "    color: #717072;\n"
 "    border-bottom: 1px solid #717072;\n"
+"}\n"
+"#sendButton{\n"
+"    border-radius: 15px;\n"
+"    background: rgb(0, 170, 127);\n"
+"}\n"
+"#sendButton:hover{\n"
+"    background: #333;\n"
 "}\n"
 "#exitButton{\n"
 "    /*background-color: red;*/\n"
@@ -87,9 +97,6 @@ class Ui_MainWindow(object):
         self.textBrowser.setGeometry(QtCore.QRect(20, 70, 851, 371))
         self.textBrowser.setStyleSheet("background-color: lightgrey;")
         self.textBrowser.setObjectName("textBrowser")
-        self.sendButton = QtWidgets.QPushButton(self.frame)
-        self.sendButton.setGeometry(QtCore.QRect(580, 460, 121, 51))
-        self.sendButton.setObjectName("sendButton")
         self.textEdit = QtWidgets.QTextEdit(self.frame)
         self.textEdit.setGeometry(QtCore.QRect(20, 460, 551, 111))
         self.textEdit.setStyleSheet("background-color: lightgrey;")
@@ -180,6 +187,10 @@ class Ui_MainWindow(object):
         self.forwardButton.setIcon(icon3)
         self.forwardButton.setIconSize(QtCore.QSize(80, 80))
         self.forwardButton.setObjectName("forwardButton")
+        self.sendButton = QtWidgets.QToolButton(self.frame)
+        self.sendButton.setGeometry(QtCore.QRect(580, 460, 121, 51))
+        self.sendButton.setText("")
+        self.sendButton.setObjectName("sendButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1299, 29))
@@ -196,7 +207,6 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MyMessenger"))
         self.label_2.setText(_translate("MainWindow", "Пользователи в данном чате"))
-        self.sendButton.setText(_translate("MainWindow", "Отправить"))
         self.exitAccountButton.setText(_translate("MainWindow", "Выйти с аккаунта"))
         self.disconnectButton.setText(_translate("MainWindow", "Выйти с сервера"))
         self.clearMessageButton.setText(_translate("MainWindow", "Очистить"))

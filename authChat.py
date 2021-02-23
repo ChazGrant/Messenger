@@ -22,7 +22,7 @@ import os
 from crypt import encrypt, decrypt
 
 URL = "http://127.0.0.1:5000"
-USERNAME = "CREATOR"
+USERNAME = "Илья"
 KEY = 314
 
 sizes = \
@@ -136,20 +136,28 @@ def removeSpaces(string):
 class LoadMessagesThread(QThread):
     load_finished = pyqtSignal(object)
 
-    def __init__(self, url, ts, serv_id):
+    def __init__(self, url, ts, serv_id, PM=False):
         super().__init__()
 
         self.url = url
         self.timestamp = ts
         self.server_id = serv_id
+        self.PM = PM
 
     def run(self):
         try:
-            rs = requests.get(self.url,
+            if self.PM:
+                rs = requests.get(self.url,
                           params={
                               'after': self.timestamp,
-                              'server_id': self.server_id
+                              'chat_id': self.server_id
                           })
+            else:
+                rs = requests.get(self.url,
+                            params={
+                                'after': self.timestamp,
+                                'server_id': self.server_id
+                            })
         except:
             rs = False
         finally:
@@ -297,6 +305,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
 
+        self.sendButton.setToolTip("Отправить")
+
         self.sendButton.pressed.connect(self.send_message)
         self.clearMessageButton.pressed.connect(
             lambda: self.textEdit.setText(""))
@@ -315,6 +325,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.showUsersButton.setIcon(QtGui.QIcon(":/resources/Images/settings.png"))
         self.backButton.setIcon(QtGui.QIcon(":/resources/Images/left.png"))
         self.forwardButton.setIcon(QtGui.QIcon(":/resources/Images/right.png"))
+        self.sendButton.setIcon(QtGui.QIcon(":/resources/Images/send.png"))
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -327,6 +338,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.username = username
         self.previousMessages = []
         self.previousMessageDate = 0
+        self.chat_id = 0
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
@@ -348,6 +360,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         # Check for highest boundary
         if self.currentLine + 1 == self.matches:
             self.forwardButton.hide()
+            if self.currentLine - 1 >= 0:
+                self.backButton.show()
             return 1
         elif self.forwardButton.isHidden():
             self.forwardButton.show()
@@ -355,6 +369,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         # Check for lowest boundary
         if self.currentLine - 1 < 0:
             self.backButton.hide()
+            if self.currentLine + 1 != self.matches:
+                self.forwardButton.show()
             return -1
         elif self.backButton.isHidden():
             self.backButton.show()
@@ -389,7 +405,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-
     # Переопределяем метод выхода из приложения
     def closeEvent(self, event):
         self.exit()
@@ -400,14 +415,24 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.main.show()
 
     def download(self):
-        resp = requests.get(self.__url + "/get_files", json={
-            "server_id": self.server_id
-        })
+        if self.chat_id:
+            resp = requests.get(self.__url + "/get_files", json={
+                "chat_id": self.chat_id
+            })  
 
-        if resp.status_code == 200:
-            allFiles = resp.json()['allFiles']
-            self.main = downloadHub(allFiles)
-            self.main.show()
+            if resp.status_code == 200:
+                allFiles = resp.json()['allFiles']
+                self.main = downloadHub(allFiles)
+                self.main.show()
+        else:
+            resp = requests.get(self.__url + "/get_files", json={
+                "server_id": self.server_id
+            })
+
+            if resp.status_code == 200:
+                allFiles = resp.json()['allFiles']
+                self.main = downloadHub(allFiles)
+                self.main.show()
 
     def upload(self):
         frame = QtWidgets.QFileDialog()
@@ -422,10 +447,16 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 else:
                     fileName = fileName + "." + fileNames[0].split("/")[-1].split('.')[1]
                 with open(fileNames[0], "rb") as file:
-                    upl = requests.get(self.__url + "/upload", data=file.read(), params={
-                        "filename": fileName,
-                        "server_id": self.server_id
-                    })
+                    if self.chat_id:
+                        upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                            "filename": fileName,
+                            "chat_id": self.chat_id
+                        })
+                    else:
+                        upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                            "filename": fileName,
+                            "server_id": self.server_id
+                        })
                 if "nameIstaken" in upl.json():
                     return showError("Данное имя файла заянято")
 
@@ -452,11 +483,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 self.usersThread.finished.connect(self.usersThread.deleteLater)
                 self.usersThread.start()
 
-                self.msgThread = LoadMessagesThread(
-                    self.__url + "/get_messages", self.timestamp, self.server_id)
-                self.msgThread.load_finished.connect(self.update_messages)
-                self.msgThread.finished.connect(self.msgThread.deleteLater)
-                self.msgThread.start()
+                if self.chat_id:
+                    self.msgThread = LoadMessagesThread(
+                        self.__url + "/get_private_messages", self.timestamp, self.chat_id, PM=True)
+                    self.msgThread.load_finished.connect(self.update_private_messages)
+                    self.msgThread.finished.connect(self.msgThread.deleteLater)
+                    self.msgThread.start()
+                else:
+                    self.msgThread = LoadMessagesThread(
+                        self.__url + "/get_messages", self.timestamp, self.server_id)
+                    self.msgThread.load_finished.connect(self.update_messages)
+                    self.msgThread.finished.connect(self.msgThread.deleteLater)
+                    self.msgThread.start()
             except:
                 showError("Вознилки неполадки")
                 return self.close()
@@ -471,13 +509,13 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             res = rs.json()['res']
             isLogged = rs.json()['userIsLoggedIn']
 
+            print(isLogged)
+
             if int(rs.json()["isBanned"]):
                 self.timer.stop()
                 showError("Вы были забанены")
                 self.exit()
                 return self.close()
-            self.users = QTextBrowser()
-            self.users.setFixedSize(self.scrollArea.width(), self.scrollArea.height())
 
             # sample:
             # ['Илья 0 1611867749.54902', 'Тест 0 1611865145.06428', 'qwerty 0 1612211290.75964', '123 0 1611867690.18362']
@@ -492,6 +530,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 offlineUsers = list()
                 for user_info in res:
                     user = user_info.split()
+                    if user[0] == self.username:
+                        continue
                     
                     user[1] = int(user[1])
                     lastTimeSeen = datetime.datetime.fromtimestamp(float(user[2]))
@@ -511,25 +551,187 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         else:
                             status = "Online" if user[1] else f"Offline {lastTimeSeen.strftime('%H:%M')}"
                     if user[1]:
-                        onlineUsers.append(user[0] + f' ({status})')
+                        onlineUsers.append(user[0] + f' {status}')
                     else:
-                        offlineUsers.append(user[0] + f' ({status})')
+                        offlineUsers.append(user[0] + f' {status}')
                 
+                self.layout = QVBoxLayout()
+
                 if self.isOnline.isChecked():
                     for onu in onlineUsers:
-                        self.users.append(onu)
+                        if onu.split()[0] == self.username:
+                            continue
+
+                        button = QPushButton(onu.split()[0], objectName="whisperButton")
+                        button.setFixedSize(220, 30)
+                        button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+                        button.installEventFilter(self)
+                        button.setStyleSheet('''
+                            color: white;
+                            background: rgb(0, 170, 127);
+                        ''')
+                        button.setToolTip(onu.split()[1])
+
+                        self.layout.addWidget(button) 
                     for ofu in offlineUsers:
-                        self.users.append(ofu)
+                        if ofu.split()[0] == self.username:
+                            continue
+
+                        button = QPushButton(ofu.split()[0], objectName="whisperButton")
+                        button.setFixedSize(220, 30)
+                        button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                        button.installEventFilter(self)
+                        button.setStyleSheet('''
+                            color: white;
+                            background: rgb(0, 170, 127);
+                        ''')
+
+                        try:
+                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
+                        except:
+                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+
+                        self.layout.addWidget(button)
+
+                    widget = QWidget()
+                    widget.setLayout(self.layout)
+                    self.scrollArea.setWidget(widget)
                 else:
                     for ofu in offlineUsers:
-                        self.users.append(ofu)
+                        if ofu.split()[0] == self.username:
+                            continue
+
+                        button = QPushButton(ofu.split()[0], objectName="whisperButton")
+                        button.setStyleSheet("font: 125px")
+                        button.setFixedSize(30, 30)
+                        button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+
+                        try:
+                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
+                        except:
+                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+
+                        self.layout.addWidget(button)
                     for onu in onlineUsers:
-                        self.users.append(onu)
+                        if onu.split()[0] == self.username:
+                            continue
+
+                        button = QPushButton(onu.split()[0], objectName="whisperButton")
+                        button.setFixedSize(30, 30)
+                        button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+
+                        button.setToolTip(onu.split()[1])
+
+                        self.layout.addWidget(button)
+
+                    widget = QWidget()
+                    widget.setLayout(self.layout)
+                    
 
                 # Тест не проводился
                 self.isNotInUsers = False
-                self.scrollArea.setWidget(self.users)
+                self.scrollArea.setWidget(widget)
         else:
+            return self.close()
+
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.Enter and source.objectName() == "whisperButton":
+            source.setStyleSheet('''
+                color: black;
+            ''')
+
+        elif event.type() == QtCore.QEvent.Leave:
+            source.setStyleSheet('''
+                color: white;
+                background: rgb(0, 170, 127);
+            ''')
+
+        return super().eventFilter(source, event)
+
+    def whisper(self, username):
+        response = requests.get(self.__url + "/get_chat_id", json={
+            "users": self.username + username,
+            "usersReversed": username + self.username 
+        })
+
+        chat_id = response.json()["chat_id"]
+
+        self.abortSearch()
+
+        if chat_id == self.chat_id:
+            self.chat_id = 0
+            self.serverNameLabel.setText(self.serverName)
+        else:
+            if self.chat_id == 0:
+                self.serverName = self.serverNameLabel.text()
+            self.serverNameLabel.setText(username)
+            self.chat_id = chat_id
+
+        self.textBrowser.clear()
+        self.timestamp = 0.0
+
+    def update_private_messages(self, rs):
+        try:
+            rs.status_code
+        except AttributeError:
+            return self.close()
+    
+        if rs.status_code == 200:
+            messages = rs.json()['messages'] 
+            if messages:
+                for message in messages:
+                    ###
+                    # 0 - имя пользователя
+                    # 1 - сообщение
+                    # 2 - время
+                    ###
+
+                    dt = datetime.datetime.fromtimestamp(
+                        message[2]).strftime('%H:%M')
+
+                    messageDate = datetime.datetime.fromtimestamp(
+                        message[2])
+                    
+
+                    if not self.previousMessageDate:
+                        self.previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>Начало переписки</b>")
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+                    
+                    if self.previousMessageDate.year < messageDate.year:
+                        self.previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+
+                    elif self.previousMessageDate.month < messageDate.month:
+                        self.previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+                    
+                    elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
+                        self.previousMessageDate = messageDate
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+                        self.textBrowser.append("")
+
+                    if message[0] == self.username:
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                    else:
+                        self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+
+                    self.textBrowser.append("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
+
+                    self.textBrowser.append("")
+                    self.timestamp = message[2]
+        else:
+            self.timer.stop()
+            showError(
+                "При попытке подключиться к серверу возникли ошибки")
             return self.close()
 
     def update_messages(self, rs):
@@ -616,28 +818,47 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         text = removeSpaces(self.textEdit.toPlainText())
         if len(text) > 100:
             return showError("Длина сообщения должна быть не более 100")
-        response = requests.get(
-            self.__url + '/send_message',
-            json={
-                'username': self.username,
-                'text': encrypt(text, self.__key),
-                'server_id': self.server_id,
-            }
-        )
-        if response.status_code == 200:
-            if "blankMessage" in response.json():
-                showError("Сообщение не может быть пустым")
-            if "invalidUsername" in response.json():
-                showError("Данного пользователя не существует")
-            if "serverCreated" in response.json():
+        if self.chat_id:
+            response = requests.get(
+                self.__url + '/send_private_message',
+                json={
+                    'username': self.username,
+                    'text': encrypt(text, self.__key),
+                    'chat_id': self.chat_id,
+                }
+            )
+            if response.status_code == 200:
+                if "blankMessage" in response.json():
+                    showError("Сообщение не может быть пустым")
+                return self.textEdit.setText("")
+            else:
                 self.timer.stop()
-                self.main = privateChat(self.username, response.json()["serverName"], self.__url)
-                self.close()
-                self.main.show()
-            return self.textEdit.setText("")
+                showError("Ошибка в подключении к серверу")
+                return self.close()
         else:
-            showError("Ошибка в подключении к серверу")
-            return self.close()
+            response = requests.get(
+                self.__url + '/send_message',
+                json={
+                    'username': self.username,
+                    'text': encrypt(text, self.__key),
+                    'server_id': self.server_id,
+                }
+            )
+            if response.status_code == 200:
+                if "blankMessage" in response.json():
+                    showError("Сообщение не может быть пустым")
+                if "invalidUsername" in response.json():
+                    showError("Данного пользователя не существует")
+                if "serverCreated" in response.json():
+                    self.timer.stop()
+                    self.main = privateChat(self.username, response.json()["serverName"], self.__url)
+                    self.close()
+                    self.main.show()
+                return self.textEdit.setText("")
+            else:
+                self.timer.stop()
+                showError("Ошибка в подключении к серверу")
+                return self.close()
 
     def search(self):
         self.sForm = searchForm()
@@ -650,12 +871,20 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.result = []
 
         if self.word:
-            response = requests.get(
-                self.__url + '/get_messages',
+            if self.chat_id:
+                response = requests.get(
+                self.__url + '/get_private_messages',
                 params={
                     'after': 0.0,
-                    'server_id': self.server_id
+                    'chat_id': self.chat_id
                 })
+            else:
+                response = requests.get(
+                    self.__url + '/get_messages',
+                    params={
+                        'after': 0.0,
+                        'server_id': self.server_id
+                    })
 
             if response.status_code == 200:
                 self.matches = 0
@@ -709,6 +938,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     # Создаём список из номеров линий для каждого сообщения
                     self.msgLines = [i*2 for i in range(len(self.result))]
                     self.currentLine = 0
+
+                    self.checkForBoundaries()
 
                 else:
                     return showMessage("Ваш запрос не выдал результатов(")
@@ -825,6 +1056,30 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
+    def update(self):
+        request = requests.get(self.__url + "/get_servers")
+        if "someProblems" in request.json():
+            showError("Проблемы с сервером")
+            return self.close()
+        res = request.json()['servers']
+
+        self.layout = QVBoxLayout()
+        time = 100
+
+        for i in res:
+            button = QPushButton(i[1], self)
+            button.setFixedSize(186, 30)
+            button.pressed.connect(lambda key=i[0]: self.connect(key))
+
+            loop = QtCore.QEventLoop()
+            QtCore.QTimer.singleShot(time, loop.quit)
+            loop.exec_()
+
+            self.layout.addWidget(button)
+            widget = QWidget()
+            widget.setLayout(self.layout)
+            self.scrollArea.setWidget(widget)
+
     def logOff(self):
         self.close()
         
@@ -894,29 +1149,6 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             else:
                 break
 
-    def update(self):
-        request = requests.get(self.__url + "/get_servers")
-        if "someProblems" in request.json():
-            showError("Проблемы с сервером")
-            return self.close()
-        res = request.json()['servers']
-
-        self.layout = QVBoxLayout()
-        time = 100
-
-        for i in res:
-            button = QPushButton(i[1], self)
-            button.setFixedSize(186, 30)
-            button.pressed.connect(lambda key=i[0]: self.connect(key))
-
-            loop = QtCore.QEventLoop()
-            QtCore.QTimer.singleShot(time, loop.quit)
-            loop.exec_()
-
-            self.layout.addWidget(button)
-            widget = QWidget()
-            widget.setLayout(self.layout)
-            self.scrollArea.setWidget(widget)
 
     def connect(self, id):
         self.__serverPassword, okPressed = QInputDialog.getText(
@@ -1349,6 +1581,12 @@ if __name__ == "__main__":
         pass
     app = QtWidgets.QApplication([])
     
+    # window = Chat()
+    # window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
+    # window.show()
+    # app.exec_()
+    # exit()
+
     data = loadData(URL)
     if data != 0:
         window = Lobby(data, URL)
