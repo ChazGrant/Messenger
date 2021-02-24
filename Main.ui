@@ -132,7 +132,7 @@ QLineEdit{
       <rect>
        <x>20</x>
        <y>460</y>
-       <width>451</width>
+       <width>551</width>
        <height>111</height>
       </rect>
      </property>
@@ -156,58 +156,13 @@ QLineEdit{
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="exitAccountButton">
-     <property name="geometry">
-      <rect>
-       <x>960</x>
-       <y>460</y>
-       <width>191</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true"/>
-     </property>
-     <property name="text">
-      <string>Выйти с аккаунта</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="disconnectButton">
-     <property name="geometry">
-      <rect>
-       <x>960</x>
-       <y>520</y>
-       <width>191</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true"/>
-     </property>
-     <property name="text">
-      <string>Выйти с сервера</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="clearMessageButton">
-     <property name="geometry">
-      <rect>
-       <x>580</x>
-       <y>460</y>
-       <width>121</width>
-       <height>111</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Очистить</string>
-     </property>
-    </widget>
     <widget class="QScrollArea" name="scrollArea">
      <property name="geometry">
       <rect>
        <x>900</x>
        <y>70</y>
        <width>251</width>
-       <height>281</height>
+       <height>371</height>
       </rect>
      </property>
      <property name="autoFillBackground">
@@ -225,7 +180,7 @@ QLineEdit{
         <x>0</x>
         <y>0</y>
         <width>251</width>
-        <height>281</height>
+        <height>371</height>
        </rect>
       </property>
      </widget>
@@ -283,10 +238,13 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>900</x>
-       <y>370</y>
+       <y>510</y>
        <width>111</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white</string>
      </property>
      <property name="text">
       <string>Онлайн</string>
@@ -298,11 +256,14 @@ QLineEdit{
     <widget class="QRadioButton" name="isOffline">
      <property name="geometry">
       <rect>
-       <x>1010</x>
-       <y>370</y>
+       <x>900</x>
+       <y>540</y>
        <width>151</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white</string>
      </property>
      <property name="text">
       <string>Оффлайн</string>
@@ -311,7 +272,7 @@ QLineEdit{
     <widget class="QPushButton" name="uploadButton">
      <property name="geometry">
       <rect>
-       <x>710</x>
+       <x>680</x>
        <y>520</y>
        <width>191</width>
        <height>51</height>
@@ -324,7 +285,7 @@ QLineEdit{
     <widget class="QPushButton" name="downloadButton">
      <property name="geometry">
       <rect>
-       <x>710</x>
+       <x>680</x>
        <y>460</y>
        <width>191</width>
        <height>51</height>
@@ -428,7 +389,7 @@ QLineEdit{
     <widget class="QToolButton" name="sendButton">
      <property name="geometry">
       <rect>
-       <x>480</x>
+       <x>580</x>
        <y>460</y>
        <width>91</width>
        <height>111</height>
@@ -439,6 +400,54 @@ QLineEdit{
      </property>
      <property name="text">
       <string/>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="exitAccountButton">
+     <property name="geometry">
+      <rect>
+       <x>1100</x>
+       <y>460</y>
+       <width>51</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border-radius: 15px</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="disconnectButton">
+     <property name="geometry">
+      <rect>
+       <x>1100</x>
+       <y>520</y>
+       <width>51</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border-radius: 15px;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>900</x>
+       <y>450</y>
+       <width>161</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Сортировка пользователей:</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </widget>

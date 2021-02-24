@@ -19,6 +19,7 @@ import hashlib
 import datetime
 import time
 import os
+import re
 from crypt import encrypt, decrypt
 
 URL = "http://127.0.0.1:5000"
@@ -64,6 +65,11 @@ sizes = \
         }
 }
 
+def cleanhtml(raw_html):
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', raw_html)
+    return cleantext
+
 def loadData(url):
     try:
         with open("userdata/data.json", "r") as file:
@@ -107,15 +113,15 @@ def beautifyText(text, searchText):
     newStr = ""
     while True:
         try:
-            text[currentIndex:].index(searchText)
+            text[currentIndex:].lower().index(searchText.lower())
         except:
             break
-        findIndex = text[currentIndex:].index(searchText)
+        findIndex = text[currentIndex:].lower().index(searchText.lower())
         sumIndex = currentIndex + findIndex
         newStr += text[currentIndex:sumIndex] + "<span style='color: red;'>" + text[sumIndex:sumIndex + len(searchText)] + "</span>"
 
         currentIndex += findIndex + 1
-        
+
     newStr += text[sumIndex + len(searchText):]
     return newStr
 
@@ -308,8 +314,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.sendButton.setToolTip("Отправить")
 
         self.sendButton.pressed.connect(self.send_message)
-        self.clearMessageButton.pressed.connect(
-            lambda: self.textEdit.setText(""))
         self.exitButton.pressed.connect(self.close)
         self.disconnectButton.pressed.connect(self.disconnect)
         self.exitAccountButton.pressed.connect(self.logOff)
@@ -326,6 +330,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.backButton.setIcon(QtGui.QIcon(":/resources/Images/left.png"))
         self.forwardButton.setIcon(QtGui.QIcon(":/resources/Images/right.png"))
         self.sendButton.setIcon(QtGui.QIcon(":/resources/Images/send.png"))
+        self.exitAccountButton.setIcon(QtGui.QIcon(":/resources/Images/exit_from_acc.png"))
+        self.disconnectButton.setIcon(QtGui.QIcon(":/resources/Images/disconnect.png"))
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -377,21 +383,75 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         return 0
 
+    def refillSearchBrowser(self):
+        self.textBrowser.clear()
+
+        self.previousMessageDate = 0
+        for searchedMessage in self.result:
+
+            if (searchedMessage['username'] == self.username):
+                self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+
+            else:
+                self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+
+            self.textBrowser.append(searchedMessage["message"])
+            self.textBrowser.append("")
+
     def backward(self):
         self.currentLine -= 1
         self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
 
-        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine])
+        firstShift = int(not self.msgLines[1] == self.msgLines[self.currentLine] and 1)
+
+        self.underlineText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine]).text())
+        self.removeUnderlineFromText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
+
+        print("removedFrom", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
+
+        self.refillSearchBrowser()
+
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 - firstShift + self.shifts[self.currentLine])
         cursor = QtGui.QTextCursor(currentText)
         self.textBrowser.setTextCursor(cursor)
 
         self.checkForBoundaries()
 
     def forward(self):
+        # 100% выводит нужный текст
+        # self.textBrowser.document().findBlockByLineNumber(self.msgLines[i] * 2 + self.shifts[i]).text()
         self.currentLine += 1
         self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
 
-        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] + int(self.currentLine and 1))
+        firstShift = int(self.msgLines[1] == self.msgLines[self.currentLine] and 1)
+
+        # TODO
+
+        # НЕ РАБОТАЕТ СУКА ПОСЛЕ ВТОРОГО РАЗА
+        # ВОЗМОЖНО refillSearchBrowser меняет позиции строк
+
+        print("count = ", self.currentLine)
+        print(self.msgLines)
+        print(self.shifts)
+        print(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text())
+
+        # previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + self.shifts[self.currentLine - 1]).text()
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text()
+
+        # print("currentLine: ", self.currentLine)
+
+        # print(previousText)
+        # print("Current text: ", currentText)
+
+        # print("previousText", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
+        # print("currentText", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine]).text())
+
+        # self.underlineText(currentText.text())
+        # self.removeUnderlineFromText(previousText.text())
+
+        self.refillSearchBrowser()
+
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine])
         cursor = QtGui.QTextCursor(currentText)
         self.textBrowser.setTextCursor(cursor)
 
@@ -718,24 +778,30 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.textBrowser.append("<b>Начало переписки</b>")
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
             self.textBrowser.append("")
+            return 1
                     
         if self.previousMessageDate.year < messageDate.year:
             self.previousMessageDate = messageDate
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
             self.textBrowser.append("")
+            return 2
 
         elif self.previousMessageDate.month < messageDate.month:
             self.previousMessageDate = messageDate
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
             self.textBrowser.append("")
+            return 2
         
         elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
             self.previousMessageDate = messageDate
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
             self.textBrowser.append("")
+            return 2
+
+        return 0
 
     def update_messages(self, rs):
         try:
@@ -845,7 +911,28 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.sForm.show()
         
         self.sForm.closeDialog.connect(lambda: self.find(self.sForm.text, self.sForm.checkBox.isChecked(), self.sForm.checkBox_2.isChecked()))
-        
+
+    def removeUnderlineFromText(self, textToDeunderline):
+        byte = b'\xe2\x80\xa8'
+        for msg in self.result:
+            for ch in textToDeunderline:
+                    if ch.encode() == byte:
+                        textToDeunderline = textToDeunderline.replace(ch, "")
+            if cleanhtml(msg["message"]) == textToDeunderline:
+                    msg["message"] = msg["message"].replace("<b>></b>", "")
+                    return True
+
+    def underlineText(self, textToUnderline):
+        byte = b'\xe2\x80\xa8'
+        for msg in self.result:
+            for ch in textToUnderline:
+                    if ch.encode() == byte:
+                        textToUnderline = textToUnderline.replace(ch, "")
+            if cleanhtml(msg["message"]) == textToUnderline:
+                    msg["message"] = msg["message"][:msg["message"].index("<br>") + 4] + "<b>></b>" + msg["message"][msg["message"].index("<br>") + 4:]
+                    return True
+                
+
     def find(self, text, nameIsChecked, msgIsChecked):
         self.word = removeSpaces(text)
         self.result = []
@@ -871,31 +958,34 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 self.msgLines = list()
                 self.totalLines = 0
 
+                if not nameIsChecked and not msgIsChecked:
+                    return showError("Выберите критерии поиска")
+
                 messages = response.json()['messages']
                 self.messages = messages
-                self.msgs = [decrypt(msg[1], self.__key) for msg in self.messages]
                 
                 for message in messages:
 
                     dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
 
-                    if self.word in message[0] and nameIsChecked:
+                    if self.word.lower() in message[0].lower() and nameIsChecked:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " + beautifyText(message[0], self.word) + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
                                     "timestamp": datetime.datetime.fromtimestamp(message[2])}
                         self.result.append(self.dict)
-                        self.msgLines.append(self.totalLines * 2)
+                        self.msgLines.append(self.totalLines)
 
                         self.matches += 1
 
-                    elif self.word in decrypt(message[1], self.__key) and msgIsChecked:
+                    elif self.word.lower() in decrypt(message[1], self.__key).lower() and msgIsChecked:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
                                                 message[0] + "</b>:<br>" + beautifyText(decrypt(message[1], self.__key), self.word) + ""),
                                     "timestamp": datetime.datetime.fromtimestamp(message[2])}
+
                         self.result.append(self.dict)
-                        self.msgLines.append(self.totalLines * 2)
+                        self.msgLines.append(self.totalLines)
 
                         self.matches += 1
 
@@ -903,9 +993,11 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
                                                 message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
-                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2]),
+                                    "isNotForSearch": True
+                                    }
                         self.result.append(self.dict)
-                    
+
                     self.totalLines += 1
 
                     if not self.isSearchEnabled:
@@ -915,22 +1007,40 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                                     "timestamp": datetime.datetime.fromtimestamp(message[2])}
                         self.previousMessages.append(self.dict)
 
-
-                if (self.result):
+                if (self.matches):
                     self.sForm.close()
                     self.textBrowser.clear()
+                    self.shifts = list()
+
+                    currentShift = 2
+
                     self.isSearchEnabled = True
+                    self.previousMessageDate = 0
                     for searchedMessage in self.result:
-                        self.time_management(searchedMessage["timestamp"])
+                        if "isNotForSearch" in searchedMessage:
+                            currentShift += int(self.time_management(searchedMessage["timestamp"]))
+                        else:
+                            isNewDate = self.time_management(searchedMessage["timestamp"])
                         if (searchedMessage['username'] == self.username):
                             self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
                         else:
                             self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
                         self.textBrowser.append(searchedMessage["message"])
                         self.textBrowser.append("")
+                        if "isNotForSearch" not in searchedMessage:
+                            if isNewDate:
+                                currentShift += 2 
+                                self.shifts.append(currentShift)
+                            else:
+                                self.shifts.append(currentShift)
+
+                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 + self.shifts[0])
+
+                    # for i in range(len(self.msgLines)):
+                    #     print(i)
+                    #     print(self.textBrowser.document().findBlockByLineNumber(self.msgLines[i] * 2 + self.shifts[i]).text())
 
 
-                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0])
                     cursor = QtGui.QTextCursor(currentText)
                     self.textBrowser.setTextCursor(cursor)
 
@@ -947,6 +1057,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.checkForBoundaries()
 
                 else:
+                    self.result = []
                     return showMessage("Ваш запрос не выдал результатов(")
         else:
             return showError("Поле поиска не может быть пустым")
@@ -1395,6 +1506,8 @@ class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
         self.searchButton.pressed.connect(self.setText)
         self.cancelButton.pressed.connect(self.close)
         self.exitButton.pressed.connect(self.close)
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)

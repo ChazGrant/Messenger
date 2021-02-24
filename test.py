@@ -5,6 +5,37 @@ import sqlite3 as sq
 from crypt import encrypt, decrypt
 import random
 import hashlib
+import re
+
+def beautifyText(text, searchText):
+    if searchText == "":
+        raise ValueError("Пустая строка для поиска")
+    currentIndex = 0
+    newStr = ""
+    while True:
+        try:
+            text[currentIndex:].index(searchText)
+        except:
+            break
+        findIndex = text[currentIndex:].index(searchText)
+        sumIndex = currentIndex + findIndex
+        newStr += text[currentIndex:sumIndex] + "<span style='color: red;'>" + text[sumIndex:sumIndex + len(searchText)] + "</span>"
+
+        currentIndex += findIndex + 1
+    try:
+        newStr += text[sumIndex + len(searchText):]
+    except:
+        newStr += text[len(searchText):]
+    return newStr
+
+print(beautifyText("Ауф".lower(), "а"))
+
+exit()
+
+def cleanhtml(raw_html):
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', raw_html)
+    return cleantext
 
 isLoggedIn = {
     1: [
@@ -17,6 +48,9 @@ isLoggedIn = {
     ]
 }
 
+while True:
+    print(cleanhtml(input()))
+exit()
 user_id = 14
 server_id = 1
 

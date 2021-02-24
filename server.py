@@ -34,6 +34,11 @@ invitesToChat = []
 
 userIsLoggedIn = dict()
 
+def cleanhtml(raw_html):
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', raw_html)
+    return cleantext
+
 def parse_keys(keys):
     keys = str(keys)
     return int(keys[keys.index("[") + 1:keys.index("]")])
@@ -267,11 +272,13 @@ def reg():
 @app.route("/send_message")
 def send_message():
     username = request.json['username']
-    text = decrypt(request.json['text'], 314)
+    text = cleanhtml(decrypt(request.json['text'], 314))
     server_id = request.json['server_id']
 
     if text == "":
-        return {"blankMessage": True}
+        return {
+            "blankMessage": True
+        }
 
     last_timestamps[server_id] = time.time()
 
@@ -559,7 +566,7 @@ def get_chat_id():
 def send_private_message():
     chat_id = request.json["chat_id"]
     username = request.json["username"]
-    message = request.json["text"]
+    message = cleanhtml(request.json["text"])
     if message == "":
         return {
             "blankMessage": True
