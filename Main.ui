@@ -63,7 +63,7 @@ QLineEdit{
 }
 #sendButton{
 	border-radius: 15px;
-	background: rgb(0, 170, 127);
+	background: lightgrey;
 }
 #sendButton:hover{
 	background: #333;
@@ -132,7 +132,7 @@ QLineEdit{
       <rect>
        <x>20</x>
        <y>460</y>
-       <width>551</width>
+       <width>451</width>
        <height>111</height>
       </rect>
      </property>
@@ -192,9 +192,9 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>580</x>
-       <y>520</y>
+       <y>460</y>
        <width>121</width>
-       <height>51</height>
+       <height>111</height>
       </rect>
      </property>
      <property name="text">
@@ -428,11 +428,14 @@ QLineEdit{
     <widget class="QToolButton" name="sendButton">
      <property name="geometry">
       <rect>
-       <x>580</x>
+       <x>480</x>
        <y>460</y>
-       <width>121</width>
-       <height>51</height>
+       <width>91</width>
+       <height>111</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
      </property>
      <property name="text">
       <string/>

@@ -671,6 +671,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timestamp = 0.0
 
     def update_private_messages(self, rs):
+        self.previousMessageDate = 0
         try:
             rs.status_code
         except AttributeError:
@@ -692,31 +693,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     messageDate = datetime.datetime.fromtimestamp(
                         message[2])
                     
-
-                    if not self.previousMessageDate:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>Начало переписки</b>")
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-                    
-                    if self.previousMessageDate.year < messageDate.year:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-
-                    elif self.previousMessageDate.month < messageDate.month:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-                    
-                    elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
+                    self.time_management(messageDate)
 
                     if message[0] == self.username:
                         self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
@@ -733,6 +710,32 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             showError(
                 "При попытке подключиться к серверу возникли ошибки")
             return self.close()
+
+    def time_management(self, messageDate):
+        if not self.previousMessageDate:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>Начало переписки</b>")
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+                    
+        if self.previousMessageDate.year < messageDate.year:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+
+        elif self.previousMessageDate.month < messageDate.month:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+        
+        elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
 
     def update_messages(self, rs):
         try:
@@ -774,30 +777,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         message[2])
                     
 
-                    if not self.previousMessageDate:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>Начало переписки</b>")
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-                    
-                    if self.previousMessageDate.year < messageDate.year:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-
-                    elif self.previousMessageDate.month < messageDate.month:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
-                    
-                    elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
-                        self.previousMessageDate = messageDate
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
-                        self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
-                        self.textBrowser.append("")
+                    self.time_management(messageDate)
 
                     if message[0] == self.username:
                         self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
@@ -888,28 +868,51 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
             if response.status_code == 200:
                 self.matches = 0
+                self.msgLines = list()
+                self.totalLines = 0
+
                 messages = response.json()['messages']
                 self.messages = messages
                 self.msgs = [decrypt(msg[1], self.__key) for msg in self.messages]
+                
                 for message in messages:
+
                     dt = datetime.datetime.fromtimestamp(
                             message[2]).strftime('%H:%M')
+
                     if self.word in message[0] and nameIsChecked:
                         self.dict = {"username": message[0], 
-                                    "message": ("<b>" + dt + " " + beautifyText(message[0], self.word) + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                                    "message": ("<b>" + dt + " " + beautifyText(message[0], self.word) + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
                         self.result.append(self.dict)
+                        self.msgLines.append(self.totalLines * 2)
+
                         self.matches += 1
+
                     elif self.word in decrypt(message[1], self.__key) and msgIsChecked:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + beautifyText(decrypt(message[1], self.__key), self.word) + "")}
+                                                message[0] + "</b>:<br>" + beautifyText(decrypt(message[1], self.__key), self.word) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
                         self.result.append(self.dict)
+                        self.msgLines.append(self.totalLines * 2)
+
                         self.matches += 1
+
+                    else:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
+                        self.result.append(self.dict)
+                    
+                    self.totalLines += 1
 
                     if not self.isSearchEnabled:
                         self.dict = {"username": message[0], 
                                     "message": ("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + "")}
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
                         self.previousMessages.append(self.dict)
 
 
@@ -918,6 +921,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.textBrowser.clear()
                     self.isSearchEnabled = True
                     for searchedMessage in self.result:
+                        self.time_management(searchedMessage["timestamp"])
                         if (searchedMessage['username'] == self.username):
                             self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
                         else:
@@ -925,9 +929,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         self.textBrowser.append(searchedMessage["message"])
                         self.textBrowser.append("")
 
-                    textCursor = QtGui.QTextCursor()
-                    textCursor.setPosition(0)
-                    self.textBrowser.setTextCursor(textCursor)
+
+                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0])
+                    cursor = QtGui.QTextCursor(currentText)
+                    self.textBrowser.setTextCursor(cursor)
 
                     self.forwardButton.show()
                     self.messagesAmount.show()
@@ -936,7 +941,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.messagesAmount.setText("1/" + str(self.matches))
 
                     # Создаём список из номеров линий для каждого сообщения
-                    self.msgLines = [i*2 for i in range(len(self.result))]
+                    # self.msgLines = [i*2 for i in range(len(self.result))]
                     self.currentLine = 0
 
                     self.checkForBoundaries()
@@ -950,6 +955,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if self.isSearchEnabled:
             self.textBrowser.clear()
             for msg in self.previousMessages:
+                self.time_management(msg["timestamp"])
                 if (msg['username'] == self.username):
                     self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
                 else:
@@ -1066,6 +1072,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.layout = QVBoxLayout()
         time = 100
 
+        self.updateButton.hide()
         for i in res:
             button = QPushButton(i[1], self)
             button.setFixedSize(186, 30)
@@ -1079,6 +1086,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             widget = QWidget()
             widget.setLayout(self.layout)
             self.scrollArea.setWidget(widget)
+
+        self.updateButton.show()
 
     def logOff(self):
         self.close()

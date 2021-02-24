@@ -64,7 +64,7 @@ class Ui_MainWindow(object):
 "}\n"
 "#sendButton{\n"
 "    border-radius: 15px;\n"
-"    background: rgb(0, 170, 127);\n"
+"    background: lightgrey;\n"
 "}\n"
 "#sendButton:hover{\n"
 "    background: #333;\n"
@@ -98,7 +98,7 @@ class Ui_MainWindow(object):
         self.textBrowser.setStyleSheet("background-color: lightgrey;")
         self.textBrowser.setObjectName("textBrowser")
         self.textEdit = QtWidgets.QTextEdit(self.frame)
-        self.textEdit.setGeometry(QtCore.QRect(20, 460, 551, 111))
+        self.textEdit.setGeometry(QtCore.QRect(20, 460, 451, 111))
         self.textEdit.setStyleSheet("background-color: lightgrey;")
         self.textEdit.setObjectName("textEdit")
         self.serverNameLabel = QtWidgets.QLabel(self.frame)
@@ -115,7 +115,7 @@ class Ui_MainWindow(object):
         self.disconnectButton.setStyleSheet("")
         self.disconnectButton.setObjectName("disconnectButton")
         self.clearMessageButton = QtWidgets.QPushButton(self.frame)
-        self.clearMessageButton.setGeometry(QtCore.QRect(580, 520, 121, 51))
+        self.clearMessageButton.setGeometry(QtCore.QRect(580, 460, 121, 111))
         self.clearMessageButton.setObjectName("clearMessageButton")
         self.scrollArea = QtWidgets.QScrollArea(self.frame)
         self.scrollArea.setGeometry(QtCore.QRect(900, 70, 251, 281))
@@ -188,7 +188,8 @@ class Ui_MainWindow(object):
         self.forwardButton.setIconSize(QtCore.QSize(80, 80))
         self.forwardButton.setObjectName("forwardButton")
         self.sendButton = QtWidgets.QToolButton(self.frame)
-        self.sendButton.setGeometry(QtCore.QRect(580, 460, 121, 51))
+        self.sendButton.setGeometry(QtCore.QRect(480, 460, 91, 111))
+        self.sendButton.setStyleSheet("")
         self.sendButton.setText("")
         self.sendButton.setObjectName("sendButton")
         MainWindow.setCentralWidget(self.centralwidget)
