@@ -23,7 +23,7 @@ import re
 from crypt import encrypt, decrypt
 
 URL = "http://127.0.0.1:5000"
-USERNAME = "Илья"
+USERNAME = "CREATOR"
 KEY = 314
 
 sizes = \
@@ -386,14 +386,30 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def refillSearchBrowser(self):
         self.textBrowser.clear()
 
+        self.shifts = list()
+
+        isNewDate = 0
+        currentShift = 2
         self.previousMessageDate = 0
         for searchedMessage in self.result:
+
+            if "isNotForSearch" in searchedMessage:
+                currentShift += int(self.time_management(searchedMessage["timestamp"]))
+            else:
+                isNewDate = self.time_management(searchedMessage["timestamp"])
 
             if (searchedMessage['username'] == self.username):
                 self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
 
             else:
                 self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+
+            if "isNotForSearch" not in searchedMessage:
+                if isNewDate:
+                    currentShift += 2 
+                    self.shifts.append(currentShift)
+                else:
+                    self.shifts.append(currentShift)
 
             self.textBrowser.append(searchedMessage["message"])
             self.textBrowser.append("")
@@ -402,56 +418,43 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.currentLine -= 1
         self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
 
-        firstShift = int(not self.msgLines[1] == self.msgLines[self.currentLine] and 1)
+        previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + self.shifts[self.currentLine + 1]).text()
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text()
 
-        self.underlineText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine]).text())
-        self.removeUnderlineFromText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
-
-        print("removedFrom", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
+        self.underlineText(currentText)
+        self.removeUnderlineFromText(previousText)
 
         self.refillSearchBrowser()
 
-        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 - firstShift + self.shifts[self.currentLine])
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine])
         cursor = QtGui.QTextCursor(currentText)
         self.textBrowser.setTextCursor(cursor)
 
         self.checkForBoundaries()
 
     def forward(self):
-        # 100% выводит нужный текст
-        # self.textBrowser.document().findBlockByLineNumber(self.msgLines[i] * 2 + self.shifts[i]).text()
         self.currentLine += 1
         self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
 
-        firstShift = int(self.msgLines[1] == self.msgLines[self.currentLine] and 1)
 
         # TODO
 
         # НЕ РАБОТАЕТ СУКА ПОСЛЕ ВТОРОГО РАЗА
         # ВОЗМОЖНО refillSearchBrowser меняет позиции строк
 
-        print("count = ", self.currentLine)
-        print(self.msgLines)
-        print(self.shifts)
-        print(self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text())
+        # FIXED
 
-        # previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + self.shifts[self.currentLine - 1]).text()
+        # Надо было просто заново заполнять msgLines и shifts (ху ноус почему так)
+
+        previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + self.shifts[self.currentLine - 1]).text()
         currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text()
 
-        # print("currentLine: ", self.currentLine)
-
-        # print(previousText)
-        # print("Current text: ", currentText)
-
-        # print("previousText", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + firstShift + self.shifts[self.currentLine]).text())
-        # print("currentText", self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine]).text())
-
-        # self.underlineText(currentText.text())
-        # self.removeUnderlineFromText(previousText.text())
+        self.underlineText(currentText)
+        self.removeUnderlineFromText(previousText)
 
         self.refillSearchBrowser()
 
-        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + firstShift + self.shifts[self.currentLine])
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine])
         cursor = QtGui.QTextCursor(currentText)
         self.textBrowser.setTextCursor(cursor)
 
@@ -617,6 +620,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 
                 self.layout = QVBoxLayout()
 
+                self.usersButtons = list()
+
                 if self.isOnline.isChecked():
                     for onu in onlineUsers:
                         if onu.split()[0] == self.username:
@@ -631,6 +636,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             background: rgb(0, 170, 127);
                         ''')
                         button.setToolTip(onu.split()[1])
+                        self.usersButtons.append(button)
 
                         self.layout.addWidget(button) 
                     for ofu in offlineUsers:
@@ -645,6 +651,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             color: white;
                             background: rgb(0, 170, 127);
                         ''')
+                        self.usersButtons.append(button)
 
                         try:
                             button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
@@ -662,9 +669,13 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             continue
 
                         button = QPushButton(ofu.split()[0], objectName="whisperButton")
-                        button.setStyleSheet("font: 125px")
+                        button.setStyleSheet('''
+                            color: white;
+                            background: rgb(0, 170, 127);
+                        ''')
                         button.setFixedSize(30, 30)
                         button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                        self.usersButtons.append(button)
 
                         try:
                             button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
@@ -677,12 +688,17 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             continue
 
                         button = QPushButton(onu.split()[0], objectName="whisperButton")
-                        button.setFixedSize(30, 30)
+                        button.setFixedSize(220, 30)
                         button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
-
+                        button.installEventFilter(self)
+                        button.setStyleSheet('''
+                            color: white;
+                            background: rgb(0, 170, 127);
+                        ''')
                         button.setToolTip(onu.split()[1])
+                        self.usersButtons.append(button)
 
-                        self.layout.addWidget(button)
+                        self.layout.addWidget(button) 
 
                     widget = QWidget()
                     widget.setLayout(self.layout)
@@ -711,7 +727,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def whisper(self, username):
         response = requests.get(self.__url + "/get_chat_id", json={
             "users": self.username + username,
-            "usersReversed": username + self.username 
+            "usersReversed": username + self.username
         })
 
         chat_id = response.json()["chat_id"]
@@ -919,20 +935,20 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     if ch.encode() == byte:
                         textToDeunderline = textToDeunderline.replace(ch, "")
             if cleanhtml(msg["message"]) == textToDeunderline:
-                    msg["message"] = msg["message"].replace("<b>></b>", "")
+                    msg["message"] = msg["message"].replace("<strong>", "")
+                    msg["message"] = msg["message"].replace("</strong>", "")
                     return True
 
     def underlineText(self, textToUnderline):
         byte = b'\xe2\x80\xa8'
         for msg in self.result:
-            for ch in textToUnderline:
-                    if ch.encode() == byte:
-                        textToUnderline = textToUnderline.replace(ch, "")
+            for ch in textToUnderline: 
+                if ch.encode() == byte:
+                    textToUnderline = textToUnderline.replace(ch, "")
             if cleanhtml(msg["message"]) == textToUnderline:
-                    msg["message"] = msg["message"][:msg["message"].index("<br>") + 4] + "<b>></b>" + msg["message"][msg["message"].index("<br>") + 4:]
-                    return True
+                msg["message"] = msg["message"][:msg["message"].index("<br>") + 4] + "<strong>" + msg["message"][msg["message"].index("<br>") + 4:] + "</strong>"
+                return True
                 
-
     def find(self, text, nameIsChecked, msgIsChecked):
         self.word = removeSpaces(text)
         self.result = []
@@ -1021,6 +1037,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             currentShift += int(self.time_management(searchedMessage["timestamp"]))
                         else:
                             isNewDate = self.time_management(searchedMessage["timestamp"])
+
                         if (searchedMessage['username'] == self.username):
                             self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
                         else:
@@ -1034,13 +1051,15 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                             else:
                                 self.shifts.append(currentShift)
 
-                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 + self.shifts[0])
-
+                    
+                    self.underlineText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 + self.shifts[0]).text())
+                    self.refillSearchBrowser()
                     # for i in range(len(self.msgLines)):
                     #     print(i)
                     #     print(self.textBrowser.document().findBlockByLineNumber(self.msgLines[i] * 2 + self.shifts[i]).text())
 
 
+                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 - 1 + self.shifts[0])
                     cursor = QtGui.QTextCursor(currentText)
                     self.textBrowser.setTextCursor(cursor)
 
@@ -1063,6 +1082,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return showError("Поле поиска не может быть пустым")
 
     def abortSearch(self):
+        self.previousMessageDate = 0
+
         if self.isSearchEnabled:
             self.textBrowser.clear()
             for msg in self.previousMessages:
@@ -1322,6 +1343,7 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         res = requests.get(self.__url + "/get_users", json={
                             "server_id": self.server_id
                         })
+        print(res.json())
         '''
             0 - username
             1 - isOnline
@@ -1703,11 +1725,11 @@ if __name__ == "__main__":
         pass
     app = QtWidgets.QApplication([])
     
-    # window = Chat()
-    # window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
-    # window.show()
-    # app.exec_()
-    # exit()
+    window = Lobby()
+    window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
+    window.show()
+    app.exec_()
+    exit()
 
     data = loadData(URL)
     if data != 0:
