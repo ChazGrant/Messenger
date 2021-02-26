@@ -10,7 +10,7 @@ import downloadUI
 import AdminUI
 import searchFormUI
 import userCreatorUI
-import privateChatUI
+import SecondaryUI
 import resources
 
 import json
@@ -139,6 +139,7 @@ def removeSpaces(string):
     return string
 
 
+
 class LoadMessagesThread(QThread):
     load_finished = pyqtSignal(object)
 
@@ -216,7 +217,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 "username": username
             })
         if "someProblems" in response.json():
-            print(response.json()["someProblems"])
+            showError("Возникли неполадки во время сохранения данных")
             return 0
         with open("userdata/data.json", "w+") as file:  
             json.dump({
@@ -344,7 +345,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.username = username
         self.previousMessages = []
         self.previousMessageDate = 0
-        self.chat_id = 0
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
@@ -389,7 +389,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.shifts = list()
 
         isNewDate = 0
-        currentShift = 2
+        currentShift = 3
         self.previousMessageDate = 0
         for searchedMessage in self.result:
 
@@ -478,24 +478,14 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.main.show()
 
     def download(self):
-        if self.chat_id:
-            resp = requests.get(self.__url + "/get_files", json={
-                "chat_id": self.chat_id
-            })  
+        resp = requests.get(self.__url + "/get_files", json={
+            "server_id": self.server_id
+        })
 
-            if resp.status_code == 200:
-                allFiles = resp.json()['allFiles']
-                self.main = downloadHub(allFiles)
-                self.main.show()
-        else:
-            resp = requests.get(self.__url + "/get_files", json={
-                "server_id": self.server_id
-            })
-
-            if resp.status_code == 200:
-                allFiles = resp.json()['allFiles']
-                self.main = downloadHub(allFiles)
-                self.main.show()
+        if resp.status_code == 200:
+            allFiles = resp.json()['allFiles']
+            self.main = downloadHub(allFiles)
+            self.main.show()
 
     def upload(self):
         frame = QtWidgets.QFileDialog()
@@ -510,16 +500,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 else:
                     fileName = fileName + "." + fileNames[0].split("/")[-1].split('.')[1]
                 with open(fileNames[0], "rb") as file:
-                    if self.chat_id:
-                        upl = requests.get(self.__url + "/upload", data=file.read(), params={
-                            "filename": fileName,
-                            "chat_id": self.chat_id
-                        })
-                    else:
-                        upl = requests.get(self.__url + "/upload", data=file.read(), params={
-                            "filename": fileName,
-                            "server_id": self.server_id
-                        })
+                    upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                        "filename": fileName,
+                        "server_id": self.server_id
+                    })
                 if "nameIstaken" in upl.json():
                     return showError("Данное имя файла заянято")
 
@@ -546,19 +530,13 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 self.usersThread.finished.connect(self.usersThread.deleteLater)
                 self.usersThread.start()
 
-                if self.chat_id:
-                    self.msgThread = LoadMessagesThread(
-                        self.__url + "/get_private_messages", self.timestamp, self.chat_id, PM=True)
-                    self.msgThread.load_finished.connect(self.update_private_messages)
-                    self.msgThread.finished.connect(self.msgThread.deleteLater)
-                    self.msgThread.start()
-                else:
-                    self.msgThread = LoadMessagesThread(
-                        self.__url + "/get_messages", self.timestamp, self.server_id)
-                    self.msgThread.load_finished.connect(self.update_messages)
-                    self.msgThread.finished.connect(self.msgThread.deleteLater)
-                    self.msgThread.start()
+                self.msgThread = LoadMessagesThread(
+                    self.__url + "/get_messages", self.timestamp, self.server_id)
+                self.msgThread.load_finished.connect(self.update_messages)
+                self.msgThread.finished.connect(self.msgThread.deleteLater)
+                self.msgThread.start()
             except:
+                self.timer.stop()
                 showError("Вознилки неполадки")
                 return self.close()
 
@@ -571,8 +549,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         if rs.status_code == 200:
             res = rs.json()['res']
             isLogged = rs.json()['userIsLoggedIn']
-
-            print(isLogged)
 
             if int(rs.json()["isBanned"]):
                 self.timer.stop()
@@ -732,60 +708,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         chat_id = response.json()["chat_id"]
 
-        self.abortSearch()
-
-        if chat_id == self.chat_id:
-            self.chat_id = 0
-            self.serverNameLabel.setText(self.serverName)
-        else:
-            if self.chat_id == 0:
-                self.serverName = self.serverNameLabel.text()
-            self.serverNameLabel.setText(username)
-            self.chat_id = chat_id
-
-        self.textBrowser.clear()
-        self.timestamp = 0.0
-
-    def update_private_messages(self, rs):
-        self.previousMessageDate = 0
-        try:
-            rs.status_code
-        except AttributeError:
-            return self.close()
-    
-        if rs.status_code == 200:
-            messages = rs.json()['messages'] 
-            if messages:
-                for message in messages:
-                    ###
-                    # 0 - имя пользователя
-                    # 1 - сообщение
-                    # 2 - время
-                    ###
-
-                    dt = datetime.datetime.fromtimestamp(
-                        message[2]).strftime('%H:%M')
-
-                    messageDate = datetime.datetime.fromtimestamp(
-                        message[2])
-                    
-                    self.time_management(messageDate)
-
-                    if message[0] == self.username:
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
-                    else:
-                        self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
-
-                    self.textBrowser.append("<b>" + dt + " " +
-                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
-
-                    self.textBrowser.append("")
-                    self.timestamp = message[2]
-        else:
-            self.timer.stop()
-            showError(
-                "При попытке подключиться к серверу возникли ошибки")
-            return self.close()
+        self.main = privateChat(self.username, username, chat_id, self.__url)
+        self.main.show()
 
     def time_management(self, messageDate):
         if not self.previousMessageDate:
@@ -794,9 +718,9 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.textBrowser.append("<b>Начало переписки</b>")
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
             self.textBrowser.append("")
-            return 1
+            return 0
                     
-        if self.previousMessageDate.year < messageDate.year:
+        elif self.previousMessageDate.year < messageDate.year:
             self.previousMessageDate = messageDate
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
@@ -826,23 +750,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
     
         if rs.status_code == 200:
-            invitations = rs.json()["invitations"]
-            try:
-                for count in range(len(invitations)):
-                    if self.username.lower() in invitations[count].keys():
-                            if invitations[count][self.username.lower()]: 
-                                self.timer.stop()
-                                showMessage("Вас пригласили в чат")
-                                response = requests.get(self.__url + "/accept_invitation", json={
-                                    "username": self.username.lower()
-                                })
-                                print(response.json())
-                                self.main = privateChat(self.username, invitations[count]["serverName"], self.__url)
-                                self.close()
-                                self.main.show()
-            except:
-                pass
-
             messages = rs.json()['messages'] 
             if messages:
                 for message in messages:
@@ -856,8 +763,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         message[2]).strftime('%H:%M')
 
                     messageDate = datetime.datetime.fromtimestamp(
-                        message[2])
-                    
+                        message[2])      
 
                     self.time_management(messageDate)
 
@@ -880,23 +786,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         text = removeSpaces(self.textEdit.toPlainText())
         if len(text) > 100:
             return showError("Длина сообщения должна быть не более 100")
-        if self.chat_id:
-            response = requests.get(
-                self.__url + '/send_private_message',
-                json={
-                    'username': self.username,
-                    'text': encrypt(text, self.__key),
-                    'chat_id': self.chat_id,
-                }
-            )
-            if response.status_code == 200:
-                if "blankMessage" in response.json():
-                    showError("Сообщение не может быть пустым")
-                return self.textEdit.setText("")
-            else:
-                self.timer.stop()
-                showError("Ошибка в подключении к серверу")
-                return self.close()
+        
         else:
             response = requests.get(
                 self.__url + '/send_message',
@@ -928,15 +818,28 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         
         self.sForm.closeDialog.connect(lambda: self.find(self.sForm.text, self.sForm.checkBox.isChecked(), self.sForm.checkBox_2.isChecked()))
 
+    ### FORMATTING TEXT FOR SEARCH ###
+
+    def removeEmptyCharactersFromText(self, textToManage: str):
+        for _ in textToManage:
+            textToManage = textToManage.replace("\n", "").replace(" ", "")
+        
+        return " ".join(textToManage.split())
+
     def removeUnderlineFromText(self, textToDeunderline):
+        # This symbol is shown as ? in console
+        # So i know only bytes form of it
         byte = b'\xe2\x80\xa8'
         for msg in self.result:
             for ch in textToDeunderline:
                     if ch.encode() == byte:
                         textToDeunderline = textToDeunderline.replace(ch, "")
-            if cleanhtml(msg["message"]) == textToDeunderline:
-                    msg["message"] = msg["message"].replace("<strong>", "")
-                    msg["message"] = msg["message"].replace("</strong>", "")
+
+            tmp = self.removeEmptyCharactersFromText(cleanhtml(msg["message"]))
+            textToDeunderline = self.removeEmptyCharactersFromText(textToDeunderline)
+
+            if tmp == textToDeunderline:
+                    msg["message"] = msg["message"].replace("<strong>", "").replace("</strong>", "")
                     return True
 
     def underlineText(self, textToUnderline):
@@ -945,29 +848,27 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             for ch in textToUnderline: 
                 if ch.encode() == byte:
                     textToUnderline = textToUnderline.replace(ch, "")
-            if cleanhtml(msg["message"]) == textToUnderline:
+
+            tmp = self.removeEmptyCharactersFromText(cleanhtml(msg["message"]))
+            textToUnderline = self.removeEmptyCharactersFromText(textToUnderline)
+
+            if tmp == textToUnderline:
                 msg["message"] = msg["message"][:msg["message"].index("<br>") + 4] + "<strong>" + msg["message"][msg["message"].index("<br>") + 4:] + "</strong>"
                 return True
-                
+
+    ###################################
+
     def find(self, text, nameIsChecked, msgIsChecked):
         self.word = removeSpaces(text)
         self.result = []
 
         if self.word:
-            if self.chat_id:
-                response = requests.get(
-                self.__url + '/get_private_messages',
+            response = requests.get(
+                self.__url + '/get_messages',
                 params={
                     'after': 0.0,
-                    'chat_id': self.chat_id
+                    'server_id': self.server_id
                 })
-            else:
-                response = requests.get(
-                    self.__url + '/get_messages',
-                    params={
-                        'after': 0.0,
-                        'server_id': self.server_id
-                    })
 
             if response.status_code == 200:
                 self.matches = 0
@@ -1028,7 +929,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     self.textBrowser.clear()
                     self.shifts = list()
 
-                    currentShift = 2
+                    currentShift = 3
 
                     self.isSearchEnabled = True
                     self.previousMessageDate = 0
@@ -1054,10 +955,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     
                     self.underlineText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 + self.shifts[0]).text())
                     self.refillSearchBrowser()
-                    # for i in range(len(self.msgLines)):
-                    #     print(i)
-                    #     print(self.textBrowser.document().findBlockByLineNumber(self.msgLines[i] * 2 + self.shifts[i]).text())
-
 
                     currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 - 1 + self.shifts[0])
                     cursor = QtGui.QTextCursor(currentText)
@@ -1069,8 +966,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
                     self.messagesAmount.setText("1/" + str(self.matches))
 
-                    # Создаём список из номеров линий для каждого сообщения
-                    # self.msgLines = [i*2 for i in range(len(self.result))]
                     self.currentLine = 0
 
                     self.checkForBoundaries()
@@ -1149,10 +1044,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         return self.main.show()
 
 
-'''
-Должна быть кнопка создать сервер
-'''
-
 class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def __init__(self, username=USERNAME, url=URL):
         super().__init__()
@@ -1195,11 +1086,13 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.oldPos = event.globalPos()
 
     def update(self):
-        request = requests.get(self.__url + "/get_servers")
-        if "someProblems" in request.json():
-            showError("Проблемы с сервером")
-            return self.close()
-        res = request.json()['servers']
+        try:
+            request = requests.get(self.__url + "/get_servers")
+            if "someProblems" in request.json():
+                return showError("Проблемы с сервером")
+            res = request.json()['servers']
+        except:
+            return showError("Сервер не отвечает")
 
         self.layout = QVBoxLayout()
         time = 100
@@ -1343,7 +1236,6 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         res = requests.get(self.__url + "/get_users", json={
                             "server_id": self.server_id
                         })
-        print(res.json())
         '''
             0 - username
             1 - isOnline
@@ -1355,7 +1247,11 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
         if self.server_id == 0:
             users = res.json()['res']
             for server_id in users.keys():
-                self.current_server_id = QtWidgets.QTreeWidgetItem(self.tree, [server_id])
+                response = requests.get(self.__url + "/get_server_name", json={
+                    "server_id": server_id
+                })
+                server_name = response.json()["server_name"]
+                self.current_server_id = QtWidgets.QTreeWidgetItem(self.tree, [server_name])
 
                 for user in users[server_id]:
                     u = user.split()
@@ -1453,10 +1349,10 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
     
     def createUser(self):
         self.main = userCreatorForm(self.server_id, self.isCreator, self.__url)
-        # self.main.setFixedSize()
         self.main.show()
         self.tree.clear()
         self.insertUsers()
+
 
 class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
     def __init__(self, server_id, isCreator, url=URL):
@@ -1466,7 +1362,7 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
         self.server_id = server_id
         self.__url = url
 
-        if  not isCreator:
+        if (not isCreator) or (isCreator and self.server_id):
             self.label_2.hide()
             self.availableServers.hide()
         else:
@@ -1514,7 +1410,8 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
         showMessage("Пользователь был создан")
         self.close()
 
-class searchForm(searchFormUI.Ui_MainWindow, QtWidgets.QMainWindow):
+
+class searchForm(QtWidgets.QMainWindow, searchFormUI.Ui_MainWindow):
     closeDialog = pyqtSignal()
     def __init__(self):
         super().__init__()
@@ -1634,8 +1531,8 @@ class downloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.downloadedFiles[fileName] = fileContent
 
 
-class privateChat(privateChatUI.Ui_MainWindow, QtWidgets.QMainWindow):
-    def __init__(self, username, serverName, url=URL):
+class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
+    def __init__(self, username, serverName, chat_id, url=URL):
         super().__init__()
         self.setupUi(self)
 
@@ -1643,19 +1540,211 @@ class privateChat(privateChatUI.Ui_MainWindow, QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.__url = url
+        self.chat_id = chat_id
         self.username = username
         self.serverName = serverName
-        self.disconnect = True
+
         self.timestamp = 0.0
+        self.isSearchEnabled = False
+        self.previousMessages = list()
+        self.__key = KEY
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+        self.backButton.setIcon(QtGui.QIcon(":/resources/Images/left.png"))
+        self.forwardButton.setIcon(QtGui.QIcon(":/resources/Images/right.png"))
+        self.sendButton.setIcon(QtGui.QIcon(":/resources/Images/send.png"))
+
+        self.searchButton.pressed.connect(self.search)
+        self.backButton.pressed.connect(self.backward)
+        self.forwardButton.pressed.connect(self.forward)
+        self.exitButton.pressed.connect(self.close)
+        self.sendButton.pressed.connect(self.sendPrivateMessage)
+        self.downloadButton.pressed.connect(self.download)
+        self.uploadButton.pressed.connect(self.upload)
+        self.abortSearchButton.pressed.connect(self.abortSearch)
+
+        self.serverNameLabel.setText(self.serverName)
+
+        self.backButton.hide()
+        self.forwardButton.hide()
+        self.messagesAmount.hide()
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
 
-        self.exitButton.pressed.connect(self.close)
-        self.sendButton.pressed.connect(self.sendMessage)
-
         self.oldPos = self.pos()
+
+    def checkForBoundaries(self):
+        # Check for highest boundary
+        if self.currentLine + 1 == self.matches:
+            self.forwardButton.hide()
+            if self.currentLine - 1 >= 0:
+                self.backButton.show()
+            return 1
+        elif self.forwardButton.isHidden():
+            self.forwardButton.show()
+
+        # Check for lowest boundary
+        if self.currentLine - 1 < 0:
+            self.backButton.hide()
+            if self.currentLine + 1 != self.matches:
+                self.forwardButton.show()
+            return -1
+        elif self.backButton.isHidden():
+            self.backButton.show()
+
+        return 0
+
+    def refillSearchBrowser(self):
+        self.textBrowser.clear()
+
+        self.shifts = list()
+
+        isNewDate = 0
+        currentShift = 3
+        self.previousMessageDate = 0
+        for searchedMessage in self.result:
+
+            if "isNotForSearch" in searchedMessage:
+                currentShift += int(self.time_management(searchedMessage["timestamp"]))
+            else:
+                isNewDate = self.time_management(searchedMessage["timestamp"])
+
+            if (searchedMessage['username'] == self.username):
+                self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+
+            else:
+                self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+
+            if "isNotForSearch" not in searchedMessage:
+                if isNewDate:
+                    currentShift += 2 
+                    self.shifts.append(currentShift)
+                else:
+                    self.shifts.append(currentShift)
+
+            self.textBrowser.append(searchedMessage["message"])
+            self.textBrowser.append("")
+
+    ### FORMATTING TEXT FOR SEARCH ###
+
+    def removeEmptyCharactersFromText(self, textToManage: str):
+        for _ in textToManage:
+            textToManage = textToManage.replace("\n", "").replace(" ", "")
+        
+        return " ".join(textToManage.split())
+
+    def removeUnderlineFromText(self, textToDeunderline):
+        # This symbol is shown as ? in console
+        # So i know only bytes form of it
+        byte = b'\xe2\x80\xa8'
+        for msg in self.result:
+            for ch in textToDeunderline:
+                    if ch.encode() == byte:
+                        textToDeunderline = textToDeunderline.replace(ch, "")
+
+            tmp = self.removeEmptyCharactersFromText(cleanhtml(msg["message"]))
+            textToDeunderline = self.removeEmptyCharactersFromText(textToDeunderline)
+
+            if tmp == textToDeunderline:
+                    msg["message"] = msg["message"].replace("<strong>", "").replace("</strong>", "")
+                    return True
+
+    def underlineText(self, textToUnderline):
+        byte = b'\xe2\x80\xa8'
+        for msg in self.result:
+            for ch in textToUnderline: 
+                if ch.encode() == byte:
+                    textToUnderline = textToUnderline.replace(ch, "")
+
+            tmp = self.removeEmptyCharactersFromText(cleanhtml(msg["message"]))
+            textToUnderline = self.removeEmptyCharactersFromText(textToUnderline)
+
+            if tmp == textToUnderline:
+                msg["message"] = msg["message"][:msg["message"].index("<br>") + 4] + "<strong>" + msg["message"][msg["message"].index("<br>") + 4:] + "</strong>"
+                return True
+
+    ###################################
+
+    def backward(self):
+        self.currentLine -= 1
+        self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
+
+        previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine + 1] * 2 + self.shifts[self.currentLine + 1]).text()
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text()
+
+        self.underlineText(currentText)
+        self.removeUnderlineFromText(previousText)
+
+        self.refillSearchBrowser()
+
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine])
+        cursor = QtGui.QTextCursor(currentText)
+        self.textBrowser.setTextCursor(cursor)
+
+        self.checkForBoundaries()
+
+    def forward(self):
+        self.currentLine += 1
+        self.messagesAmount.setText(str(self.currentLine + 1) + "/" + str(self.matches))
+
+
+        # TODO
+
+        # НЕ РАБОТАЕТ СУКА ПОСЛЕ ВТОРОГО РАЗА
+        # ВОЗМОЖНО refillSearchBrowser меняет позиции строк
+
+        # FIXED
+
+        # Надо было просто заново заполнять msgLines и shifts (ху ноус почему так)
+
+        previousText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine - 1] * 2 + self.shifts[self.currentLine - 1]).text()
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine]).text()
+
+        self.underlineText(currentText)
+        self.removeUnderlineFromText(previousText)
+
+        self.refillSearchBrowser()
+
+        currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[self.currentLine] * 2 + self.shifts[self.currentLine])
+        cursor = QtGui.QTextCursor(currentText)
+        self.textBrowser.setTextCursor(cursor)
+
+        self.checkForBoundaries()
+
+    def sendPrivateMessage(self):
+        text = removeSpaces(self.textEdit.toPlainText())
+        if len(text) > 100:
+            return showError("Длина сообщения должна быть не более 100")
+        
+        else:
+            response = requests.get(
+                self.__url + '/send_private_message',
+                json={
+                    'username': self.username,
+                    'text': encrypt(text, self.__key),
+                    'chat_id': self.chat_id,
+                }
+            )
+            if response.status_code == 200:
+                if "blankMessage" in response.json():
+                    showError("Сообщение не может быть пустым")
+                
+                return self.textEdit.setText("")
+            else:
+                self.timer.stop()
+                showError("Ошибка в подключении к серверу")
+                return self.close()
+
+        if response.status_code == 200:
+            if "blankMessage" in response.json():
+                showError("Сообщение не может быть пустым")
+            return self.textEdit.setText("")
+        else:
+            self.timer.stop()
+            showError("Ошибка в подключении к серверу")
+            return self.close()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -1665,56 +1754,246 @@ class privateChat(privateChatUI.Ui_MainWindow, QtWidgets.QMainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-    def sendMessage(self):
-        response = requests.get(self.__url + "/send_private_message", json={
-            "serverName": self.serverName,
-            "username": self.username,
-            "message": self.textEdit.toPlainText()
-        })
+    def time_management(self, messageDate):
+        if not self.previousMessageDate:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>Начало переписки</b>")
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+            return 0
+                    
+        elif self.previousMessageDate.year < messageDate.year:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+            return 2
 
-        if response.status_code == 200:
-            if "ok" not in response.json():
-                print("Беды")
-            self.textEdit.clear()
+        elif self.previousMessageDate.month < messageDate.month:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+            return 2
+        
+        elif self.previousMessageDate.month == messageDate.month and self.previousMessageDate.day < messageDate.day:
+            self.previousMessageDate = messageDate
+            self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
+            self.textBrowser.append("<b>" + messageDate.strftime("%d/%m/%Y") + "</b>")
+            self.textBrowser.append("")
+            return 2
 
+        return 0
 
-    def update(self):
-        response = requests.get(self.__url + "/get_private_messages", json={
-            "serverName": self.serverName,
-            "timestamp": self.timestamp
-        })
-
-        if response.status_code == 200:
-            if response.json()["isLeft"]:
-                self.timer.stop()
-                response = requests.get(self.__url + "/delete_private_server", json={
-                    "serverName": self.serverName
-                })
-                if "username" in response.json():
-                    username = response.json()["username"]
-
-                showMessage(username + " покинул сервер")
-                self.disconnect = False
-                return self.close()
-            messages = response.json()["messages"]
-            if len(messages):
+    def updatePrivateMessages(self, rs):
+        self.previousMessageDate = 0
+        try:
+            rs.status_code
+        except AttributeError:
+            return self.close()
+    
+        if rs.status_code == 200:
+            messages = rs.json()['messages'] 
+            if messages:
                 for message in messages:
-                    if message["username"] == self.username:
+                    ###
+                    # 0 - имя пользователя
+                    # 1 - сообщение
+                    # 2 - время
+                    ###
+
+                    dt = datetime.datetime.fromtimestamp(
+                        message[2]).strftime('%H:%M')
+
+                    messageDate = datetime.datetime.fromtimestamp(
+                        message[2])
+                    
+                    self.time_management(messageDate)
+
+                    if message[0] == self.username:
                         self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
                     else:
                         self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
-                    self.textBrowser.append(message["username"] + ": " + message["message"])
+
+                    self.textBrowser.append("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key))
+
                     self.textBrowser.append("")
-                    self.timestamp = message["timestamp"]
+                    self.timestamp = message[2]
+        else:
+            self.timer.stop()
+            showError(
+                "При попытке подключиться к серверу возникли ошибки")
+            return self.close()
 
+    def search(self):
+        self.sForm = searchForm()
+        self.sForm.show()
+        
+        self.sForm.closeDialog.connect(lambda: self.find(self.sForm.text, self.sForm.checkBox.isChecked(), self.sForm.checkBox_2.isChecked()))
 
-    def closeEvent(self, event, disconnect=True):
-        if self.disconnect:
-            requests.get(self.__url + "/disconnect_from_private_server", json={
-                "serverName": self.serverName,
-                "username": self.username
-            })
-        event.accept()
+    def find(self, text, nameIsChecked, msgIsChecked):
+        self.word = removeSpaces(text)
+        self.result = []
+
+        if self.word:
+            response = requests.get(
+                self.__url + '/get_private_messages',
+                params={
+                    'after': 0.0,
+                    'chat_id': self.chat_id
+                })
+
+            if response.status_code == 200:
+                self.matches = 0
+                self.msgLines = list()
+                self.totalLines = 0
+
+                if not nameIsChecked and not msgIsChecked:
+                    return showError("Выберите критерии поиска")
+
+                messages = response.json()['messages']
+                self.messages = messages
+                
+                for message in messages:
+
+                    dt = datetime.datetime.fromtimestamp(
+                            message[2]).strftime('%H:%M')
+
+                    if self.word.lower() in message[0].lower() and nameIsChecked:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " + beautifyText(message[0], self.word) + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
+                        self.result.append(self.dict)
+                        self.msgLines.append(self.totalLines)
+
+                        self.matches += 1
+
+                    elif self.word.lower() in decrypt(message[1], self.__key).lower() and msgIsChecked:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + beautifyText(decrypt(message[1], self.__key), self.word) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
+
+                        self.result.append(self.dict)
+                        self.msgLines.append(self.totalLines)
+
+                        self.matches += 1
+
+                    else:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2]),
+                                    "isNotForSearch": True
+                                    }
+                        self.result.append(self.dict)
+
+                    self.totalLines += 1
+
+                    if not self.isSearchEnabled:
+                        self.dict = {"username": message[0], 
+                                    "message": ("<b>" + dt + " " +
+                                                message[0] + "</b>:<br>" + decrypt(message[1], self.__key) + ""),
+                                    "timestamp": datetime.datetime.fromtimestamp(message[2])}
+                        self.previousMessages.append(self.dict)
+
+                if (self.matches):
+                    self.sForm.close()
+                    self.textBrowser.clear()
+                    self.shifts = list()
+
+                    currentShift = 3
+
+                    self.isSearchEnabled = True
+                    self.previousMessageDate = 0
+                    for searchedMessage in self.result:
+                        if "isNotForSearch" in searchedMessage:
+                            currentShift += int(self.time_management(searchedMessage["timestamp"]))
+                        else:
+                            isNewDate = self.time_management(searchedMessage["timestamp"])
+
+                        if (searchedMessage['username'] == self.username):
+                            self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                        else:
+                            self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+                        self.textBrowser.append(searchedMessage["message"])
+                        self.textBrowser.append("")
+                        if "isNotForSearch" not in searchedMessage:
+                            if isNewDate:
+                                currentShift += 2 
+                                self.shifts.append(currentShift)
+                            else:
+                                self.shifts.append(currentShift)
+
+                    
+                    self.underlineText(self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 + self.shifts[0]).text())
+                    self.refillSearchBrowser()
+
+                    currentText = self.textBrowser.document().findBlockByLineNumber(self.msgLines[0] * 2 - 1 + self.shifts[0])
+                    cursor = QtGui.QTextCursor(currentText)
+                    self.textBrowser.setTextCursor(cursor)
+
+                    self.forwardButton.show()
+                    self.messagesAmount.show()
+                    self.searchButton.hide()
+
+                    self.messagesAmount.setText("1/" + str(self.matches))
+
+                    self.currentLine = 0
+
+                    self.checkForBoundaries()
+
+                else:
+                    self.result = []
+                    return showMessage("Ваш запрос не выдал результатов(")
+        else:
+            return showError("Поле поиска не может быть пустым")
+
+    def abortSearch(self):
+        self.previousMessageDate = 0
+
+        if self.isSearchEnabled:
+            self.textBrowser.clear()
+            for msg in self.previousMessages:
+                self.time_management(msg["timestamp"])
+                if (msg['username'] == self.username):
+                    self.textBrowser.setAlignment(QtCore.Qt.AlignRight)
+                else:
+                    self.textBrowser.setAlignment(QtCore.Qt.AlignLeft)
+                self.textBrowser.append(msg["message"])
+                self.textBrowser.append("")
+            
+            self.backButton.hide()
+            self.forwardButton.hide()
+            self.messagesAmount.hide()
+            self.searchButton.show()
+
+            self.isSearchEnabled = False
+
+    def download(self):
+        resp = requests.get(self.__url + "/get_files", json={
+            "chat_id": self.chat_id
+        })  
+
+        if resp.status_code == 200:
+            allFiles = resp.json()['allFiles']
+            self.main = downloadHub(allFiles)
+            self.main.show()
+
+    def upload(self):
+        upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                            "filename": fileName,
+                            "chat_id": self.chat_id
+                        })
+
+    def update(self):
+        self.msgThread = LoadMessagesThread(
+            self.__url + "/get_private_messages", self.timestamp, self.chat_id, PM=True)
+        self.msgThread.load_finished.connect(self.updatePrivateMessages)
+        self.msgThread.finished.connect(self.msgThread.deleteLater)
+        self.msgThread.start()
 
 
 if __name__ == "__main__":
@@ -1724,15 +2003,9 @@ if __name__ == "__main__":
     except:
         pass
     app = QtWidgets.QApplication([])
-    
-    window = Lobby()
-    window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
-    window.show()
-    app.exec_()
-    exit()
 
     data = loadData(URL)
-    if data != 0:
+    if data:
         window = Lobby(data, URL)
         window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
         window.show()

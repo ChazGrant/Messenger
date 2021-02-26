@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['authChat.py'],
+a = Analysis(['authChat.pyw'],
              pathex=['D:\\GitHub\\Messenger'],
              binaries=[],
              datas=[],
@@ -30,4 +30,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=True )
+          console=False )

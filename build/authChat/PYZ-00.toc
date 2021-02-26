@@ -937,7 +937,7 @@
    'c:\\users\\ilya\\appdata\\local\\programs\\python\\python38\\lib\\json\\scanner.py',
    'PYMODULE'),
   ('resources', 'D:\\GitHub\\Messenger\\resources.py', 'PYMODULE'),
-  ('privateChatUI', 'D:\\GitHub\\Messenger\\privateChatUI.py', 'PYMODULE'),
+  ('SecondaryUI', 'D:\\GitHub\\Messenger\\SecondaryUI.py', 'PYMODULE'),
   ('userCreatorUI', 'D:\\GitHub\\Messenger\\userCreatorUI.py', 'PYMODULE'),
   ('searchFormUI', 'D:\\GitHub\\Messenger\\searchFormUI.py', 'PYMODULE'),
   ('AdminUI', 'D:\\GitHub\\Messenger\\AdminUI.py', 'PYMODULE'),

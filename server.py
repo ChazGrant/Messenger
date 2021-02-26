@@ -59,31 +59,6 @@ def get_chat_name_(chat_id):
             chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {request.json['chat_id']}").fetchone()[0]
             return chatName
 
-def create_private_server(admin, user, server_id):
-    with sq.connect("Messenger.db") as conn:
-        cur = conn.cursor()
-        users = cur.execute(f"SELECT `users` FROM servers WHERE `server_id` = {int(server_id)}").fetchall()[0][0].split()
-
-        users = list(map(lambda x: x.lower(), users))
-
-        if user not in users:
-            return {
-                "invalidUsername": True
-            }
-        
-        privateChats[admin+user] = {
-            "messages": [],
-            "isLeft": False
-        }
-        invitesToChat.append({
-            user: True,
-            "serverName": admin+user
-            })
-
-        return {
-            "serverCreated": True,
-            "serverName": admin+user
-        }
 
 @app.route("/")
 def hello():
@@ -216,9 +191,6 @@ def login():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash_(password)}';").fetchone():
-            cur.execute(
-                f"UPDATE `users` SET isOnline=1 WHERE `username`='{username}'")
-            conn.commit()
             return {'ok': True}
         return {'invalidData': True}
 
@@ -288,8 +260,6 @@ def send_message():
     name, arg = None, None
     try:
         name, arg = inp[0].lower(), inp[1].lower()
-        if name == "/pm":
-            return create_private_server(username, arg, server_id)
     except:
         name = inp[0].lower()
     with sq.connect("Messenger.db") as conn:
@@ -312,11 +282,24 @@ def send_message():
             cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
                         username, encrypt(text, 314), time.time(), server_id))
 
-    return {'ok': True}
+    return {
+        'ok': True
+    }
 
 
 @app.route("/get_server_name")
 def get_server_name():
+    if "username" not in request.json:
+        server_id = request.json['server_id']
+
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            server_name = cur.execute(
+                f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+        return {
+            'server_name': server_name
+            }
+
     username = request.json['username']
     server_id = request.json['server_id']
     with sq.connect("Messenger.db") as conn:
@@ -329,88 +312,7 @@ def get_server_name():
         'server_name': server_name,
         'rightsGranted': str(username) in admins or str(username) == "CREATOR"
         }
-'''
-############# Private server handling #####################
-@app.route("/send_private_message")
-def send_private_message():
-    serverName = request.json["serverName"]
-    username = request.json["username"]
-    message = request.json["message"]
 
-    last_timestamps[serverName] = time.time()
-
-    privateChats[serverName]["messages"].append({
-        "username": username,
-        "message": message,
-        "timestamp": time.time()
-    })
-
-    return {
-        "ok": True
-    }
-
-@app.route("/accept_invitation")
-def accept_invitation():
-    try:
-        username = request.json["username"]
-
-        for count in range(len(invitesToChat)):
-            if username in invitesToChat[count].keys():
-                invitesToChat[count][username] = False
-    except Exception as e:
-        return {
-            "bad": str(e)
-        }
-    
-    return {
-        "ok": True
-    }
-
-@app.route("/get_private_messages")
-def get_private_messages():
-    serverName = request.json["serverName"]
-    after = request.json["timestamp"]
-
-    messages = []
-    try:
-        if last_timestamps[serverName] > after:
-            for msg in privateChats[serverName]["messages"]:
-                if msg["timestamp"] > after:
-                    messages.append(msg)
-    except:
-        last_timestamps[serverName] = after
-    
-
-    return {
-        "messages": messages,
-        "isLeft": privateChats[serverName]["isLeft"]
-    }
-
-@app.route("/delete_private_server")
-def delete_private_server():
-    serverName = request.json["serverName"]
-
-    username = privateChats[serverName]["isLeft"]
-
-    del privateChats[serverName]
-
-    return {
-        "username": username
-    }
-
-@app.route("/disconnect_from_private_server")
-def disconnect_from_private_server():
-    serverName = request.json["serverName"]
-    username = request.json["username"]
-
-    privateChats[serverName]["isLeft"] = username
-
-    return {
-        "ok": True
-    }
-
-#########################################################
-'''
 @app.route("/get_servers")
 def get_servers():
     with sq.connect("Messenger.db") as conn:
@@ -593,7 +495,6 @@ def get_private_messages():
         cur = conn.cursor()
         after = float(request.args['after'])
         chat_id = str(request.args['chat_id'])
-        # print(last_timestamps)
         try:
             if last_timestamps[chat_id] >= after:
                 res = cur.execute(
@@ -605,11 +506,11 @@ def get_private_messages():
                 return {
                     'messages': []
                 }
-        except Exception as e:
-            print(e)
+        except:
             last_timestamps[chat_id] = after
             res = cur.execute(
-                f"SELECT `username`, `text`, `timestamp` FROM `chatMessages` WHERE `timestamp` > {after} AND `chat_id` = {chat_id};").fetchall()
+                f"SELECT `username`, `text`, `timestamp` FROM `chatMessages` WHERE `timestamp` > {after} AND `chat_id` = {int(chat_id)};").fetchall()
+
             return {
                 'messages': res
             }
@@ -626,12 +527,10 @@ def get_messages():
                     f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
                 return {
                     'messages': res,
-                    "invitations": invitesToChat
                 }
             else:
                 return {
                     'messages': [],
-                    "invitations": invitesToChat
                 }
         except:
             last_timestamps[server_id] = after
@@ -639,7 +538,6 @@ def get_messages():
                 f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
             return {
                 'messages': res,
-                "invitations": invitesToChat
             }
 
 ############# SESSION #################
