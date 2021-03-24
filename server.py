@@ -682,9 +682,13 @@ def get_users():
 def ban():
     try:
         uname = request.json['username']
-        server_id = str(request.json['server_id'])
+        if "server_id" in request.json:
+            server_id = str(request.json['server_id'])
         with sq.connect("Messenger.db") as conn:
             cur = conn.cursor()
+            if "server_name" in request.json:
+                server_name = request.json["server_name"]
+                server_id = str(cur.execute(f"SELECT server_id FROM servers WHERE server_name = '{server_name}'").fetchone()[0])
             server_id_ = cur.execute(
                     f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
             isBanned = cur.execute(
@@ -696,8 +700,8 @@ def ban():
             cur.execute(
                 f"UPDATE users SET isBanned='{isBannedToStr}' WHERE `username` LIKE '%{uname}%'")
             conn.commit()
-    except:
-        return {"someProblems": True}
+    except Exception as e:
+        return {"someProblems": str(e)}
     return {"ok": True}
 
 @app.route("/disconnect")
