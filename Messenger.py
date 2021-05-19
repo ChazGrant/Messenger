@@ -1088,7 +1088,10 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
     def update(self):
         try:
-            request = requests.get(self.__url + "/get_servers")
+            # Убрать косяк
+            request = requests.get(self.__url + "/get_servers", json={
+                "blankJSON": True
+            })
             if "someProblems" in request.json():
                 return showError("Проблемы с сервером")
             res = request.json()['servers']
@@ -1128,7 +1131,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         return self.main.show()
 
     def download(self):
-        resp = requests.get(URL + "/get_files")
+        resp = requests.get(URL + "/get_files", json={})
         if resp.status_code == 200:
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)

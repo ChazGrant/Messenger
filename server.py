@@ -435,7 +435,8 @@ def get_files():
         files = [f for _, _, f in os.walk("static/" + str(server_name))][0]
 
     if files:
-        files = files[0]
+        print(files)
+        files = files
     else:
         pass
 
