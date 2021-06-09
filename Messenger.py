@@ -1994,10 +1994,24 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
             self.main.show()
 
     def upload(self):
-        upl = requests.get(self.__url + "/upload", data=file.read(), params={
-                            "filename": fileName,
-                            "chat_id": self.chat_id
-                        })
+        frame = QtWidgets.QFileDialog()
+        frame.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        if frame.exec_():
+            fileNames = frame.selectedFiles()
+            fileName, okPressed = QInputDialog.getText(
+                self, "Название файла", "Введите новое название файла: ", QLineEdit.Normal, "")
+            if okPressed:
+                if fileName == "":
+                    fileName = fileNames[0].split("/")[-1]
+                else:
+                    fileName = fileName + "." + fileNames[0].split("/")[-1].split('.')[1]
+                with open(fileNames[0], "rb") as file:
+                    upl = requests.get(self.__url + "/upload", data=file.read(), params={
+                        "filename": fileName,
+                        "chat_id": self.chat_id
+                    })
+                if "nameIstaken" in upl.json():
+                    return showError("Данное имя файла заянято")
 
     def update(self):
         self.msgThread = LoadMessagesThread(

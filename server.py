@@ -18,6 +18,85 @@ app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 last_timestamps = dict()
 
+# PIZDEC
+with sq.connect("Messenger.db") as conn:
+    cur = conn.cursor()
+
+    allUsersIsOnline = cur.execute(
+        "SELECT `isOnline`, `servers_id`, `user_id` FROM users"
+    ).fetchall()
+    
+    allServersID = cur.execute(
+        "SELECT `server_id` FROM servers"
+    ).fetchall()
+
+    servers_id = []
+
+    for server_id in allServersID:
+        servers_id.append(server_id[0])
+    
+    allUsersIsOnline_f = []
+    allServersID_f = []
+    users_id = []
+
+    for userIsOnline in allUsersIsOnline:
+        usersIsOnline = [us for us in userIsOnline[0] if us != " "]
+        serversForUsers = [sfu for sfu in userIsOnline[1] if sfu != " "]
+
+        users_id.append(userIsOnline[2])
+        allUsersIsOnline_f.append(usersIsOnline)
+        allServersID_f.append(serversForUsers)
+
+    # print(allUsersIsOnline_f)
+    print(allServersID_f)
+    # print(users_id)
+
+    isLoggedIn = list(dict(list(dict())))
+
+    for server_id, i in zip(servers_id, range(len(servers_id))):
+        isLoggedIn.append(
+            {
+                server_id: []
+            }
+        )
+        print(isLoggedIn)
+        print()
+        for index in range(len(users_id)):
+            if str(server_id) in allServersID_f[index]:
+                server_id_index = allServersID_f[index].index(str(server_id))
+                isLoggedIn[i][index].append(
+                    {
+                        users_id[index]: int(allUsersIsOnline_f[index][server_id_index])
+                    }
+                )
+        
+    print(isLoggedIn)
+
+    # isLoggedIn = [
+    #     {
+    #         1: [
+    #             {
+    #                 23: 1
+    #             }
+                
+    #         ]
+    #     }
+    # ]
+
+
+    # [0] - isOnline
+    # [1] - server_id
+    # for server_id in servers_id:
+    #     print(server_id, ": ")
+    #     for userIsOnline in allUsersIsOnline:
+    #         if str(server_id) in userIsOnline[1]:
+    #             print("UIO", userIsOnline[1])
+    #             server_id_position = userIsOnline[1].index(str(server_id))
+    #             print(userIsOnline[0][server_id_position])
+
+    # print(servers_id)
+    # print(allUsersIsOnline)
+
 isLoggedIn = {
     1: [
         {
@@ -67,19 +146,48 @@ def hello():
 
 @app.route("/status")
 def status():
-    with sq.connect("Messenger.db") as conn:
-        cur = conn.cursor()
-        serv = cur.execute(
-            f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`=1;").fetchone()
-        messages_count = len(cur.execute(
-            f"SELECT `server_id` FROM `messages` WHERE `server_id`=1;").fetchall())
-    return{
-        'status': 'OK',
-        'name': serv[0],
-        'server_start_time': datetime.fromtimestamp(serv[1]).strftime('%H:%M:%S %d/%m/%Y'),
-        'current_users': len(serv[2].split()),
-        'current_messages': messages_count
-    }
+    if not request.get_json() == None:
+        serv_id = request.json["server_id"]
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            serv = cur.execute(
+                f"SELECT `server_name`, `start_time`, `users` FROM servers WHERE `server_id`={serv_id};").fetchone()
+            messages_count = len(cur.execute(
+                f"SELECT `server_id` FROM `messages` WHERE `server_id`={serv_id};").fetchall())
+        return{
+            'status': 'OK',
+            'name': serv[0],
+            'server_start_time': datetime.fromtimestamp(serv[1]).strftime('%H:%M:%S %d/%m/%Y'),
+            'current_users': len(serv[2].split()),
+            'current_messages': messages_count
+        }
+    else:
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            servers = cur.execute(
+                    f"SELECT `server_name`, `start_time`, `users` FROM servers;").fetchall()
+            servers_id = cur.execute(
+                    f"SELECT `server_id` FROM `servers`;").fetchall()
+
+            servers_id.sort()
+            messages = []
+            for server_id in servers_id:
+                messages.append(
+                    len(cur.execute(
+                        f"SELECT `server_id` FROM `messages` WHERE `server_id`= {server_id[0]};")
+                        .fetchall()))
+        info = ""
+        for counter in range(len(servers_id)):
+            users = "".join(map(lambda x: "<li>" + str(x) + "</li>", servers[counter][2].split()))
+            info += f'''
+            <ul>
+                <li>Название сервера: {servers[counter][0]}</li>
+                <li>Время, прошедшее с момента запуска: {servers[counter][1]}</li>
+                <li>Пользователи: <ul>{users}</ul></li>
+                <li>Кол-во сообщений: {messages[counter]}</li>
+            </ul>'''
+        return info
+
 
 
 @app.route("/create_server")
@@ -174,7 +282,19 @@ def connect():
         except:
             return {"someProblems": True}
 
-    for us in isLoggedIn[int(server_id)]:
+    try:
+        for us in isLoggedIn[int(server_id)]:
+            # Возвращает значение для ключа словаря
+            # В данном случае возвращает в сети ли пользователь
+            # parse_keys(us.keys()) возвращает значение для ключа
+            print(us[parse_keys(us.keys())])
+            us[parse_keys(us.keys())] = 1
+    except KeyError:
+        isLoggedIn[int(server_id)] = [
+            {
+                us : 1
+            }
+        ]
         us[parse_keys(us.keys())] = 1
 
     return {
