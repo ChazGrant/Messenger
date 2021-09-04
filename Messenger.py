@@ -483,7 +483,10 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             "server_id": self.server_id
         })
 
+
         if resp.status_code == 200:
+            if "someProblems" in resp.json():
+                return showError("Возникли неполадки с сервером")
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)
             self.main.show()
@@ -548,6 +551,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             return self.close()
 
         if rs.status_code == 200:
+            if "someProblems" in rs.json():
+                return showError("Возникли неполадки")
             res = rs.json()['res']
             isLogged = rs.json()['userIsLoggedIn']
 
@@ -1133,6 +1138,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def download(self):
         resp = requests.get(URL + "/get_files", json={})
         if resp.status_code == 200:
+            if "someProblems" in resp.json():
+                return showError("Возникли неполадки с сервером")
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)
             self.main.setWindowFlags(QtCore.Qt.FramelessWindowHint)
@@ -1330,11 +1337,9 @@ class adminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
                     "server_name": self.tree.selectedItems()[0].parent().text(0)
                 })
 
-                print(self.tree.selectedItems()[0].text(0))
-                print(self.tree.selectedItems()[0].parent().text(0))
 
                 if "someProblems" in response.json():
-                    return showError(response.json()["someProblems"])
+                    return showError("Возникли неполадки с сервером")
 
                 banned = "разбанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
                     == "Banned" else "забанен"
@@ -1740,22 +1745,16 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
             )
             if response.status_code == 200:
                 if "blankMessage" in response.json():
-                    showError("Сообщение не может быть пустым")
+                    return showError("Сообщение не может быть пустым")
+                
+                if "someProblems" in response.json():
+                    return showError("Возникли неполадки с сервером")
                 
                 return self.textEdit.setText("")
             else:
                 self.timer.stop()
                 showError("Ошибка в подключении к серверу")
                 return self.close()
-
-        if response.status_code == 200:
-            if "blankMessage" in response.json():
-                showError("Сообщение не может быть пустым")
-            return self.textEdit.setText("")
-        else:
-            self.timer.stop()
-            showError("Ошибка в подключении к серверу")
-            return self.close()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -1989,6 +1988,9 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
         })  
 
         if resp.status_code == 200:
+            if "someProblems" in resp.json():
+                return showError("Возникли неполадки с сервером")
+
             allFiles = resp.json()['allFiles']
             self.main = downloadHub(allFiles)
             self.main.show()

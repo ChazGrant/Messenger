@@ -10,7 +10,17 @@ import os
 import zipfile
 import random
 
+# PROBLEM(S)
 
+###
+'''
+    Понять как обновлять список пользователей на стороне клиента только тогда, когда 
+    меняется статус одного из них
+'''
+###
+def get_key(keys):
+    keys = str(keys)
+    return int(keys[keys.index("[") + 1:keys.index("]")])
 
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -22,19 +32,24 @@ last_timestamps = dict()
 with sq.connect("Messenger.db") as conn:
     cur = conn.cursor()
 
+    # Возвращает несколько списков со списками каждого атрибута
+    # =>[(isOnline, servers_id, user_id), ...]
     allUsersIsOnline = cur.execute(
         "SELECT `isOnline`, `servers_id`, `user_id` FROM users"
     ).fetchall()
-    
+
+    # Возвращает все айди серверов в tuple
+    # => [(server_id), ...]
     allServersID = cur.execute(
         "SELECT `server_id` FROM servers"
     ).fetchall()
-
-    servers_id = []
-
-    for server_id in allServersID:
-        servers_id.append(server_id[0])
     
+    # Все айди серверов в удобной форме
+    # [1, 2, 3, 4, 5]
+    servers_id = [server_id[0] for server_id in allServersID]
+
+    # 3 списка для удобного доступа к информации о пользователях
+    # 0 - для первого пользователя и тд
     allUsersIsOnline_f = []
     allServersID_f = []
     users_id = []
@@ -43,87 +58,61 @@ with sq.connect("Messenger.db") as conn:
         usersIsOnline = [us for us in userIsOnline[0] if us != " "]
         serversForUsers = [sfu for sfu in userIsOnline[1] if sfu != " "]
 
+        # Добавляем айди каждого пользователя
         users_id.append(userIsOnline[2])
         allUsersIsOnline_f.append(usersIsOnline)
         allServersID_f.append(serversForUsers)
 
-    # print(allUsersIsOnline_f)
-    print(allServersID_f)
-    # print(users_id)
-
     isLoggedIn = list(dict(list(dict())))
 
+    # i - для добавления в нужный индекс списка
+    # server_id - для словаря
     for server_id, i in zip(servers_id, range(len(servers_id))):
         isLoggedIn.append(
             {
                 server_id: []
             }
         )
-        print(isLoggedIn)
-        print()
+
+        # Добавляем инфу про каждого пользователя в словарь
         for index in range(len(users_id)):
+
             if str(server_id) in allServersID_f[index]:
+                # Для быстрого поиска id сервера в списке allUsersIsOnline_f
                 server_id_index = allServersID_f[index].index(str(server_id))
-                isLoggedIn[i][index].append(
+                isLoggedIn[i][server_id].append(
                     {
                         users_id[index]: int(allUsersIsOnline_f[index][server_id_index])
                     }
                 )
-        
-    print(isLoggedIn)
 
-    # isLoggedIn = [
-    #     {
-    #         1: [
-    #             {
-    #                 23: 1
-    #             }
-                
-    #         ]
-    #     }
-    # ]
+'''
+### Я хз зачем я это писал ###
+    # i - Номер списка (по порядку всех серверов)
+    # ii - айди сервера
+    for i in range(len(isLoggedIn)):
+        for ii in isLoggedIn[i]:
+            print(isLoggedIn[i][ii][0])
+        #print(get_key(i.get_keys()))
+    
+    # Доступ к i-тому словарю списка
+    for server_i in range(len(isLoggedIn)):
+        # Доступ к i-тому словарю
+        for i in isLoggedIn[server_i]:
+            for dict_elem in isLoggedIn[server_i][i]:
+                print(dict_elem)
+            # print(i[1][0].values())
+            # exit()
+            # if get_key(i.keys()) == 1:
+            #     i[1][0][16] = 1
+'''
 
-
-    # [0] - isOnline
-    # [1] - server_id
-    # for server_id in servers_id:
-    #     print(server_id, ": ")
-    #     for userIsOnline in allUsersIsOnline:
-    #         if str(server_id) in userIsOnline[1]:
-    #             print("UIO", userIsOnline[1])
-    #             server_id_position = userIsOnline[1].index(str(server_id))
-    #             print(userIsOnline[0][server_id_position])
-
-    # print(servers_id)
-    # print(allUsersIsOnline)
-
-isLoggedIn = {
-    1: [
-        {
-            23: 1
-        },
-        {
-            2: 1
-        }
-    ]
-}
-
-privateChats = dict()
-invitesToChat = []
-
-userIsLoggedIn = dict()
+hash_ = lambda text: hashlib.md5(text.encode()).hexdigest()
 
 def cleanhtml(raw_html):
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', raw_html)
     return cleantext
-
-def parse_keys(keys):
-    keys = str(keys)
-    return int(keys[keys.index("[") + 1:keys.index("]")])
-
-def hash_(text):
-    return hashlib.md5(text.encode()).hexdigest()
 
 def get_server_name_(server_id):
     with sq.connect("Messenger.db") as conn:
@@ -134,19 +123,19 @@ def get_server_name_(server_id):
 
 def get_chat_name_(chat_id):
     with sq.connect("Messenger.db") as conn:
-            cur = conn.cursor()
-            chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {request.json['chat_id']}").fetchone()[0]
-            return chatName
+        cur = conn.cursor()
+        chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {request.json['chat_id']}").fetchone()[0]
+        return chatName
 
 
 @app.route("/")
-def hello():
+def main():
     return "Hello, User! Это наш мессенджер. А вот его статус:<a href='/status'>Status</a>"
 
 
 @app.route("/status")
 def status():
-    if not request.get_json() == None:
+    if request.get_json():
         serv_id = request.json["server_id"]
         with sq.connect("Messenger.db") as conn:
             cur = conn.cursor()
@@ -189,32 +178,37 @@ def status():
         return info
 
 
-
 @app.route("/create_server")
 def create_server():
-    servName = request.json['serverName']
-    servPass = request.json['serverPassword']
-    servAdmin = request.json['username']
-    with sq.connect("Messenger.db") as conn:
-        cur = conn.cursor()
-        serverNames = cur.execute(
-            "SELECT `server_name` FROM servers").fetchall()
-        for serverName in serverNames:
-            if servName in serverName:
-                return {"nameIsTaken": True}
-        cur.execute("INSERT INTO servers(`server_name`, `admins`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
-                    (servName, servAdmin, servAdmin, time.time(), hash_(servPass)))
-        conn.commit()
+    serv_name = request.json['serverName']
+    serv_pass = request.json['serverPassword']
+    serv_admin = request.json['username']
 
-        server_id = cur.execute(f"SELECT server_id FROM `servers` WHERE `server_name` LIKE '%{servName}%'").fetchone()
+    try:
+        with sq.connect("Messenger.db") as conn:
+            cur = conn.cursor()
+            server_names = cur.execute(
+                "SELECT `server_name` FROM servers").fetchall()
 
-        os.mkdir("static/" + str(servName))
+            for server_name in server_names:
+                if serv_name in server_name:
+                    return {"nameIsTaken": True}
+            cur.execute("INSERT INTO servers(`server_name`, `admins`, `users`, `start_time`, `password`) VALUES(?, ?, ?, ?, ?)",
+                        (serv_name, serv_admin, serv_admin, time.time(), hash_(serv_pass)))
+            conn.commit()
 
-        return {"server_id": server_id}
-    return {"someProblems": True}
-    '''
-Название сервера, дата запуска, админ
-    '''
+            server_id = cur.execute(f"SELECT server_id FROM `servers` WHERE `server_name` LIKE '%{serv_name}%'").fetchone()
+
+            os.mkdir("static/" + str(serv_name))
+
+            return {
+                "server_id": server_id
+                }
+    except:
+        return {
+            "someProblems": True
+            }
+
 
 # Проверить обновляются ли юзеры на разных серверах
 @app.route("/connect")
@@ -226,6 +220,9 @@ def connect():
             server_id = str(request.json['server_id'])
             username = request.json['username']
             password = request.json['password']
+
+            user_id = int(cur.execute(
+                f"SELECT user_id FROM `users` WHERE `username`='{username}'").fetchone()[0])
 
             rightPassword = cur.execute(
                 f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
@@ -278,24 +275,26 @@ def connect():
                         f"UPDATE `users` SET `isOnline`='{isOnlineToStr}', `entryTime`='{entryTimeToStr}' WHERE username='{ username }'")
                     conn.commit()
             else:
-                return {"badPassword": True}
+                return {
+                    "badPassword": True
+                    }
         except:
-            return {"someProblems": True}
+            return {
+                "someProblems": True
+                }
 
     try:
-        for us in isLoggedIn[int(server_id)]:
-            # Возвращает значение для ключа словаря
-            # В данном случае возвращает в сети ли пользователь
-            # parse_keys(us.keys()) возвращает значение для ключа
-            print(us[parse_keys(us.keys())])
-            us[parse_keys(us.keys())] = 1
+        isLoggedIn[
+            [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+        ][int(server_id)][0][user_id] = 1
     except KeyError:
-        isLoggedIn[int(server_id)] = [
+        isLoggedIn.append(
             {
-                us : 1
-            }
-        ]
-        us[parse_keys(us.keys())] = 1
+                int(server_id) : 
+                    {
+                        user_id: 1
+                    }
+            })
 
     return {
         "ok": True
@@ -306,13 +305,20 @@ def connect():
 def login():
     username = request.json['username']
     password = request.json['password']
+
     if username == "" or password == "":
-        return {'isNotFilled': True}
+        return {
+            "isNotFilled": True
+            }
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         if cur.execute(f"SELECT user_id from users WHERE `username`='{username}' AND `password`='{hash_(password)}';").fetchone():
-            return {'ok': True}
-        return {'invalidData': True}
+            return {
+                "ok": True
+                }
+        return {
+            "invalidData": True
+            }
 
 @app.route("/create_user")
 def create_user():
@@ -326,39 +332,55 @@ def create_user():
         password = re.sub(r"[\s]+", "_", password)
 
         if username == "" or password == "":
-            return {'isNotFilled': True}
+            return {
+                    "isNotFilled": True
+                }
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{ username }';").fetchone():
-            return {'nameIsTaken': True}
+            return {
+                    "nameIsTaken": True
+                }
         if re.match(pattern, password):
             cur.execute(
                 "INSERT INTO users(`username`, `password`, `isOnline`, `servers_id`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned`) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",\
                     (username, hash_(password), '0', server_id, str(time.time()), str(time.time()), '0.0', '0'))
             conn.commit()
             
-            return {'ok': True}
-    return {"badPassword": True}
+            return {
+                    "ok": True
+                }
+    return {
+            "badPassword": True
+        }
 
 @app.route("/reg")
 def reg():
+    username = request.json['username']
+    password = request.json['password']
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        username = request.json['username']
-        password = request.json['password']
 
         # Минимум 1 символ, буквы или цифры. Длина пароля от 8 до 16
         pattern = r"^(?=.*[\W].*)(?=.*[0-9].*)(?=.*[a-zA-Z].*)[0-9a-zA-Z\W_]{8,16}?$"
         password = re.sub(r"[\s]+", "_", password)
 
         if username == "" or password == "":
-            return {'isNotFilled': True}
+            return {
+                    "isNotFilled": True
+                }
         if cur.execute(f"SELECT `username` FROM `users` WHERE `username`='{ username }';").fetchone():
-            return {'nameIsTaken': True}
+            return {
+                    "nameIsTaken": True
+                }
         if re.match(pattern, password):
             cur.execute(
                 "INSERT INTO users(`username`, `password`) VALUES(?, ?)", (username, hash_(password)))
             conn.commit()
-            return {'ok': True}
-    return {"badPassword": True}
+            return {
+                    "ok": True
+                }
+    return {
+            "badPassword": True
+        }
 
 
 @app.route("/send_message")
@@ -378,29 +400,29 @@ def send_message():
 
 
     name, arg = None, None
-    try:
+    if len(inp) >= 2:
         name, arg = inp[0].lower(), inp[1].lower()
-    except:
+    else:
         name = inp[0].lower()
+
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        if len(inp) <= 2:
-            arg = None if arg == "" else arg
-            if name in commands:
-                if arg is not None:
-                    server_id = request.json["server_id"]
 
-                    cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
-                        "BOT", encrypt(commands[name]['action'](arg), 314), time.time(), server_id))
-                else:
-                    cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
-                        "BOT", encrypt(commands[name]['action'](), 314), time.time(), server_id))
+        if len(inp) >= 2:
+            arg = None if arg == "" else arg
+
+            if name in commands:
+                server_id = request.json["server_id"]
+                cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
+                    "BOT", encrypt(commands[name]['action'](arg), 314), time.time(), server_id))
+
             else:
                 cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
                     username, encrypt(text, 314), time.time(), server_id))
+
         else:
             cur.execute("INSERT INTO messages(`username`, `text`, `timestamp`, `server_id`) VALUES(?, ?, ?, ?)", (
-                        username, encrypt(text, 314), time.time(), server_id))
+                        username, encrypt(text, 314), time.time(), server_id)) 
 
     return {
         'ok': True
@@ -429,9 +451,10 @@ def get_server_name():
         server_name = cur.execute(
             f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
     return {
-        'server_name': server_name,
-        'rightsGranted': str(username) in admins or str(username) == "CREATOR"
+            'server_name': server_name,
+            'rightsGranted': username in admins or username == "CREATOR"
         }
+
 
 @app.route("/get_servers")
 def get_servers():
@@ -443,7 +466,9 @@ def get_servers():
                 "servers": servers
             }
         except:
-            return {"someProblems": True}
+            return {
+                "someProblems": True
+                }
 
 
 @app.route("/upload")
@@ -461,8 +486,8 @@ def upload():
         chat_id = request.args["chat_id"]
         with sq.connect("Messenger.db") as conn:
             cur = conn.cursor()
-            chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {chat_id}").fetchone()[0]
-            files = [f for _, _, f in os.walk("static/" + str(chatName))]
+            chat_name = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {chat_id}").fetchone()[0]
+            files = [f for _, _, f in os.walk("static/" + chat_name)]
 
             if files:
                 files = files[0]
@@ -474,14 +499,14 @@ def upload():
                     return {
                         "nameIsTaken": True
                     }
-            with open("static/privateChats/" + chatName + "/" + filename, "wb+") as file:
+            with open("static/privateChats/" + chat_name + "/" + filename, "wb+") as file:
                 file.write(data)
 
 
     if not server_id:
         files = [f for _, _, f in os.walk("static")][0]
     else:
-        files = [f for _, _, f in os.walk("static/" + str(server_name))][0]
+        files = [f for _, _, f in os.walk("static/" + server_name)][0]
 
     for file in files:
         if file == filename:
@@ -496,17 +521,20 @@ def upload():
         with open("static/" + server_name + "/" + filename, "wb+") as file:
             file.write(data)
 
-    return {"ok": True}
+    return {
+        "ok": True
+        }
+
 
 # Можно вернуть либо один файл, либо архивом несколько
 @app.route("/download")
 def download():
-    neededFile = request.json["neededFile"]
+    needed_file = request.json["neededFile"]
 
     if "chat_id" in request.json: 
-        chatName = get_chat_name_(request.json["chat_id"])
+        chat_name = get_chat_name_(request.json["chat_id"])
 
-        filesList = [f for _, _, f in os.walk("static/privateChats/" + chatName)]
+        files_list = [f for _, _, f in os.walk("static/privateChats/" + chat_name)]
 
     else:
         if "server_id" in request.json:
@@ -515,13 +543,13 @@ def download():
             server_id = 0
 
         if not server_id:
-            filesList = [f for _, _, f in os.walk("static/")]
+            files_list = [f for _, _, f in os.walk("static/")]
         else:
-            filesList = [f for _, _, f in os.walk("static/" + str(server_name))]
+            files_list = [f for _, _, f in os.walk("static/" + str(server_name))]
 
 
-    for file in filesList:
-        if neededFile == file:
+    for file in files_list:
+        if needed_file == file:
             if server_id:
                 return send_from_directory(directory="static/" + str(server_name), filename=file, as_attachment=True)
             else:
@@ -535,13 +563,21 @@ def get_files():
         server_id = 0
     
     if "chat_id" in request.json:
-        chatName = get_chat_name_(request.json["chat_id"])
-        files = [f for _, _, f in os.walk("static/privateChats/" + chatName)]
+        chat_name = get_chat_name_(request.json["chat_id"])
+        try:
+            files = [f for _, _, f in os.walk("static/privateChats/" + chat_name)]
+        except:
+            return {
+                "someProblems": True
+            }
 
         if files:
+            # files это 2-мерный список, 0 список содержит всю инфу
             files = files[0]
         else:
-            pass
+            return {
+                "someProblems": True
+            }
 
         return {
             "allFiles": files
@@ -552,13 +588,14 @@ def get_files():
 
     else:
         server_name = get_server_name_(server_id)
-        files = [f for _, _, f in os.walk("static/" + str(server_name))][0]
+        files = [f for _, _, f in os.walk("static/" + server_name)]
 
     if files:
-        print(files)
-        files = files
+        files = files[0]
     else:
-        pass
+        return {
+            "someProblems": True
+        }
 
     return {
         "allFiles": files
@@ -569,9 +606,9 @@ def get_chat_id():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         users = request.json["users"]
-        usersReversed = request.json["usersReversed"]
+        users_reversed = request.json["usersReversed"]
 
-        res = cur.execute(f"SELECT `chat_id` FROM chats WHERE `chatName` LIKE '%{users}%' OR `chatName` LIKE '%{usersReversed}%'").fetchone()
+        res = cur.execute(f"SELECT `chat_id` FROM chats WHERE `chatName` LIKE '%{users}%' OR `chatName` LIKE '%{users_reversed}%'").fetchone()
         if res:
             return {
                 "chat_id": res[0]
@@ -580,7 +617,7 @@ def get_chat_id():
             os.mkdir("static/privateChats/" + users)
             cur.execute("INSERT INTO chats(`chatName`) VALUES(?)", (users, ))
             conn.commit()
-            res = cur.execute(f"SELECT `chat_id` FROM chats WHERE chatName LIKE '%{users}%' OR chatName LIKE '%{usersReversed}%'").fetchone()
+            res = cur.execute(f"SELECT `chat_id` FROM chats WHERE chatName LIKE '%{users}%' OR chatName LIKE '%{users_reversed}%'").fetchone()
             return {
                 "chat_id": res[0]
             }
@@ -590,6 +627,7 @@ def send_private_message():
     chat_id = request.json["chat_id"]
     username = request.json["username"]
     message = cleanhtml(request.json["text"])
+
     if message == "":
         return {
             "blankMessage": True
@@ -605,9 +643,9 @@ def send_private_message():
             return {
                 "ok": True
             }
-    except Exception as e:
+    except:
         return {
-            "someProblems": str(e)
+            "someProblems": True
         }
 
 @app.route("/get_private_messages")
@@ -617,7 +655,7 @@ def get_private_messages():
         after = float(request.args['after'])
         chat_id = str(request.args['chat_id'])
         try:
-            if last_timestamps[chat_id] >= after:
+            if last_timestamps[chat_id] > after:
                 res = cur.execute(
                     f"SELECT `username`, `text`, `timestamp` FROM `chatMessages` WHERE `timestamp` > {after} AND `chat_id` = {int(chat_id)};").fetchall()
                 return {
@@ -643,7 +681,7 @@ def get_messages():
         after = float(request.args['after'])
         server_id = int(request.args['server_id'])
         try:
-            if last_timestamps[server_id] >= after:
+            if last_timestamps[server_id] > after:
                 res = cur.execute(
                     f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
                 return {
@@ -666,42 +704,42 @@ def get_messages():
 def create_session():
     try:
         username = request.json["username"]
-        usernameForHash = username
+        username_for_hash = username
 
         with sq.connect("Messenger.db") as conn:
             cur = conn.cursor()
-            isUsernameInUse = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%'").fetchone()
+            username_in_use = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%'").fetchone()
 
-            for i in range(16):
-                usernameForHash += random.choice(ALPHABET)
-            saltedHash = hashlib.md5(usernameForHash.encode()).hexdigest()
+            for _ in range(16):
+                username_for_hash += random.choice(ALPHABET)
+            salted_hash = hashlib.md5(username_for_hash.encode()).hexdigest()
 
-            if isUsernameInUse:
-                cur.execute(f"UPDATE sessions SET `hash` = '{saltedHash}' WHERE `username` LIKE '%{username}%'").fetchone()
+            if username_in_use:
+                cur.execute(f"UPDATE sessions SET `hash` = '{salted_hash}' WHERE `username` LIKE '%{username}%'").fetchone()
                 conn.commit()
             else:
-                cur.execute("INSERT INTO sessions(`username`, `hash`) VALUES(?, ?)", (username, saltedHash))
+                cur.execute("INSERT INTO sessions(`username`, `hash`) VALUES(?, ?)", (username, salted_hash))
                 conn.commit()
             
             return {
-                "hash": encrypt(saltedHash, 314)
+                "hash": encrypt(salted_hash, 314)
             }
 
-    except Exception as e:
+    except:
         return {
-            "someProblems": str(e)
+            "someProblems": True
         }
 
 @app.route("/check_for_session")
 def check_for_session():
     username = decrypt(request.json["username"], 314)
-    saltedHash = decrypt(request.json["hash"], 314)
+    salted_hash = decrypt(request.json["hash"], 314)
 
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        isValid = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%' AND `hash` LIKE '%{saltedHash}%'").fetchone()
+        is_valid = cur.execute(f"SELECT `session_id` FROM sessions WHERE `username` LIKE '%{username}%' AND `hash` LIKE '%{salted_hash}%'").fetchone()
 
-        return {"username": username} if isValid else {"badHash": True}
+        return {"username": username} if is_valid else {"badHash": True}
 
 ############# SESSION #################
 
@@ -711,40 +749,40 @@ def get_users():
         server_id = str(request.json["server_id"])
         cur = conn.cursor()
 
-        isLogged = 0
-        isCurrentUserBanned = 0
+        is_logged = 0
+        is_current_user_banned = 0
 
         try:
             
-            username = str(request.json["username"])
+            username = request.json["username"]
             
-            user_id = cur.execute(
+            user_id = int(cur.execute(
                 f"SELECT `user_id` FROM users WHERE `username` LIKE '%{username}%';"
-            ).fetchone()[0]
+            ).fetchone()[0])
             
-            isFound = False
-            
-            for i in isLoggedIn[int(server_id)]:
-                if user_id == parse_keys(i.keys()):
-                    isFound = True
-
-            if not isFound:
-                isLoggedIn[int(server_id)].append({
-                    int(user_id): 1})
-
-            for us in isLoggedIn[int(server_id)]:
-                if int(user_id) == parse_keys(us.keys()):
-                    isLogged = us[parse_keys(us.keys())]
-                    us[parse_keys(us.keys())] = 0
-                    break
+            try:
+                if isLoggedIn[
+                    [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+                ][int(server_id)][0][user_id]:
+                    is_logged = 1
+            except KeyError:
+                isLoggedIn.append(
+                    {
+                        int(server_id) : 
+                            {
+                                user_id: 1
+                            }
+                    })
             
             server_id_ = cur.execute(
                 f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
-            userIsBanned = cur.execute(
+            user_is_banned = cur.execute(
                 f"SELECT `isBanned` FROM users WHERE `username` LIKE '%{username}%'").fetchone()[0].split()
-            isCurrentUserBanned = int(userIsBanned[server_id_])
+            is_current_user_banned = int(user_is_banned[server_id_])
         except:
-            pass
+            return {
+                "someProblems": True
+            }
 
 
     if server_id == '0':
@@ -795,16 +833,18 @@ def get_users():
 
     return {
         'res': res,
-        'userIsLoggedIn': isLogged,
-        "isBanned": isCurrentUserBanned
+        'userIsLoggedIn': is_logged,
+        "isBanned": is_current_user_banned
     }
     
 @app.route("/ban_user")
 def ban():
     try:
         uname = request.json['username']
+
         if "server_id" in request.json:
             server_id = str(request.json['server_id'])
+
         with sq.connect("Messenger.db") as conn:
             cur = conn.cursor()
             if "server_name" in request.json:
@@ -812,18 +852,26 @@ def ban():
                 server_id = str(cur.execute(f"SELECT server_id FROM servers WHERE server_name = '{server_name}'").fetchone()[0])
             server_id_ = cur.execute(
                     f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
-            isBanned = cur.execute(
+            is_banned = cur.execute(
                     f"SELECT `isBanned` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
-            isBanned[server_id_] = (str( int( not( int(isBanned[server_id_]) ) ) ))
+            # convert to int
+            # !
+            # convert from true/false to 0/1
+            # convert to string
+            is_banned[server_id_] = (str( int( not( int(is_banned[server_id_]) ) ) ))
 
-            isBannedToStr = " ".join(isBanned)
+            is_banned_to_str = " ".join(is_banned)
 
             cur.execute(
-                f"UPDATE users SET isBanned='{isBannedToStr}' WHERE `username` LIKE '%{uname}%'")
+                f"UPDATE users SET isBanned='{is_banned_to_str}' WHERE `username` LIKE '%{uname}%'")
             conn.commit()
-    except Exception as e:
-        return {"someProblems": str(e)}
-    return {"ok": True}
+    except:
+        return {
+            "someProblems": True
+            }
+    return {
+        "ok": True
+        }
 
 @app.route("/disconnect")
 def disconnect():
@@ -833,35 +881,38 @@ def disconnect():
     with sq.connect("Messenger.db") as conn:
         try:
             cur = conn.cursor()
-            # Достаём необходимые данные из БД
+
+            user_id = int(cur.execute(
+                f"SELECT user_id FROM `users` WHERE `username`='{uname}'").fetchone()[0])
             server_id_ = cur.execute(
                     f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
-            isOnline = cur.execute(
+            is_online = cur.execute(
                     f"SELECT isOnline FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
-            lastSeen = cur.execute(
+            last_seen = cur.execute(
                     f"SELECT `lastSeen` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
-            timeSpent = cur.execute(
+            time_spent = cur.execute(
                     f"SELECT `timeSpent` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
-            entryTime =cur.execute(
+            entry_time =cur.execute(
                     f"SELECT `entryTime` FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split()
-            isOnline[server_id_] = '0'
-            timeSpent[server_id_] = str(float(timeSpent[server_id_]) + time.time() - float(entryTime[server_id_]))
-            lastSeen[server_id_] = str(time.time())
+            is_online[server_id_] = '0'
+            time_spent[server_id_] = str(float(time_spent[server_id_]) + time.time() - float(entry_time[server_id_]))
+            last_seen[server_id_] = str(time.time())
 
-            isOnlineToStr = " ".join(isOnline)
-            lastSeenToStr = " ".join(lastSeen)
-            timeSpentToStr = " ".join(timeSpent)
+            is_online_to_str = " ".join(is_online)
+            last_seen_to_str = " ".join(last_seen)
+            time_spent_to_str = " ".join(time_spent)
 
             cur.execute(
-                f"UPDATE `users` SET `timeSpent`='{timeSpentToStr}', `isOnline`='{isOnlineToStr}', `lastSeen`='{lastSeenToStr}' WHERE `username` LIKE '%{uname}%';")
+                f"UPDATE `users` SET `timeSpent`='{time_spent_to_str}', `isOnline`='{is_online_to_str}', `lastSeen`='{last_seen_to_str}' WHERE `username` LIKE '%{uname}%';")
             conn.commit()
         except Exception as e:
             return {
-                "someProblems": str(e)
+                "someProblems": True
             }
 
-    for us in isLoggedIn[int(server_id)]:
-        us[parse_keys(us.keys())] = 1
+    isLoggedIn[
+        [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+    ][int(server_id)][0][user_id] = 0
 
     return {
         "ok": True
