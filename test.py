@@ -6,8 +6,10 @@ from crypt import encrypt, decrypt
 import random
 import hashlib
 import re
-ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-username = "Ilya"
 
+def func(a: str) -> str:
+    print(a + a)
 
-print(username)
+    return 6
+
+print(func("f"))

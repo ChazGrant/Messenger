@@ -285,7 +285,7 @@ def connect():
 
     try:
         isLoggedIn[
-            [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+            [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
         ][int(server_id)][0][user_id] = 1
     except KeyError:
         isLoggedIn.append(
@@ -681,9 +681,9 @@ def get_messages():
         after = float(request.args['after'])
         server_id = int(request.args['server_id'])
         try:
-            if last_timestamps[server_id] > after:
+            if last_timestamps[server_id] >= after:
                 res = cur.execute(
-                    f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+                    f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` >= {after} AND `server_id` = {server_id};").fetchall()
                 return {
                     'messages': res,
                 }
@@ -694,7 +694,7 @@ def get_messages():
         except:
             last_timestamps[server_id] = after
             res = cur.execute(
-                f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` > {after} AND `server_id` = {server_id};").fetchall()
+                f"SELECT `username`, `text`, `timestamp` FROM `messages` WHERE `timestamp` >= {after} AND `server_id` = {server_id};").fetchall()
             return {
                 'messages': res,
             }
@@ -762,7 +762,7 @@ def get_users():
             
             try:
                 if isLoggedIn[
-                    [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+                    [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
                 ][int(server_id)][0][user_id]:
                     is_logged = 1
             except KeyError:
@@ -911,7 +911,7 @@ def disconnect():
             }
 
     isLoggedIn[
-        [get_key(i.keys) for i in isLoggedIn].index(int(server_id))
+        [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
     ][int(server_id)][0][user_id] = 0
 
     return {
