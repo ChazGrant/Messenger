@@ -652,18 +652,26 @@ def send_private_message():
 def get_private_messages():
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
+        companion = str(request.args['companion'])
         after = float(request.args['after'])
         chat_id = str(request.args['chat_id'])
+
+        is_online = cur.execute(f"SELECT `isOnline` FROM users WHERE `username`='{companion}'").fetchone()[0].split()
+
+        is_online = '1' in is_online
+
         try:
             if last_timestamps[chat_id] > after:
                 res = cur.execute(
                     f"SELECT `username`, `text`, `timestamp` FROM `chatMessages` WHERE `timestamp` > {after} AND `chat_id` = {int(chat_id)};").fetchall()
                 return {
-                    'messages': res
+                    'messages': res,
+                    "isOnline": is_online
                 }
             else:
                 return {
-                    'messages': []
+                    'messages': [],
+                    "isOnline": is_online
                 }
         except:
             last_timestamps[chat_id] = after
@@ -671,7 +679,8 @@ def get_private_messages():
                 f"SELECT `username`, `text`, `timestamp` FROM `chatMessages` WHERE `timestamp` > {after} AND `chat_id` = {int(chat_id)};").fetchall()
 
             return {
-                'messages': res
+                'messages': res,
+                "isOnline": is_online
             }
 
 @app.route("/get_messages")

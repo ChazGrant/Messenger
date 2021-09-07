@@ -158,13 +158,14 @@ def remove_spaces(string: str) -> str:
 class LoadMessagesThread(QThread):
     load_finished = pyqtSignal(object)
 
-    def __init__(self, url: str, ts: float, serv_id: int, PM:bool=False) -> None:
+    def __init__(self, url: str, ts: float, serv_id: int, PM:bool=False, companion:str="") -> None:
         super().__init__()
 
         self.url = url
         self.timestamp = ts
         self.server_id = serv_id
         self.PM = PM
+        self.companion = companion
 
     def run(self):
         # Запрашиваем сообщения в зависимости от того сервер это или чат
@@ -173,7 +174,8 @@ class LoadMessagesThread(QThread):
                 rs = requests.get(self.url,
                           params={
                               'after': self.timestamp,
-                              'chat_id': self.server_id
+                              'chat_id': self.server_id,
+                              'companion': self.companion
                           })
             else:
                 rs = requests.get(self.url,
@@ -222,9 +224,70 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.__key = key
         self.__url = url
 
+        self.users.setAlignment(QtCore.Qt.AlignTop)
+        self.users.setWidgetResizable(False)
+
+       
+        users = [f for _, _, f in os.walk("userdata")]
+
+
+        if users:
+            self.layout = QVBoxLayout()
+            successful_buttons = 0
+            users = users[0]
+            saved_data = list()
+
+            for user in users:
+                with open(f"userdata/{user}", "r") as file:
+                    tmp = json.load(file)
+                    saved_data.append({
+                        "username": tmp["username"],
+                        "hash": tmp["hash"]
+                    })
+
+            time = 100
+
+            for el in saved_data:
+
+                response = requests.get(self.__url + "/check_for_session", json={
+                    "username": el["username"], 
+                    "hash": el["hash"]
+                })
+
+                try:
+                    username = response.json()["username"]
+                    button = QPushButton(username, self)
+                    button.setFixedSize(250, 30)
+                    button.pressed.connect(lambda key=username: self.login(username))
+                    successful_buttons += 1
+                except:
+                    pass
+                
+
+                # Задержка перед созданием следующей кнопки
+                loop = QtCore.QEventLoop()
+                QtCore.QTimer.singleShot(time, loop.quit)
+                loop.exec_()
+
+                self.layout.addWidget(button)
+                widget = QWidget()
+                widget.setLayout(self.layout)
+                self.users.setWidget(widget)
+            if successful_buttons:
+                self.hide_login()
+                self.registrateButton.setText("Вход/Регистрация")
+                self.registrateButton.pressed.connect(self.show_login)
+            else:
+                self.users.hide()
+                self.registrateButton.pressed.connect(self.registration)
+        else:
+            self.users.hide()
+            self.registrateButton.pressed.connect(self.registration)
+
+        
+
         # Прикрепление событий к каждой кнопке
         self.loginButton.pressed.connect(self.login)
-        self.registrateButton.pressed.connect(self.registration)
         self.exitButton.pressed.connect(self.close)
 
         # Установка картинки для кнопки выхода
@@ -233,6 +296,13 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         # Прозрачное окно без рамок
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+    def hide_login(self) -> None:
+        self.usernameText.hide()
+        self.passwordText.hide()
+        self.loginButton.hide()
+        self.label_2.hide()
+        self.rememberMe.hide()
 
     def save_data(self, username: str) -> int:
         response = requests.get(self.__url + "/create_session", json={
@@ -248,6 +318,11 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                 "hash": response.json()["hash"]
             }, file) 
             return 1
+
+    def show_login(self) -> None:
+        self.users.hide()
+        self.registrateButton.pressed.connect(self.registration)
+        self.registrateButton.setText("Регистрация")
 
     def clear_spaces(self, string: str) -> str:
         string = string.replace(' ', '')
@@ -265,7 +340,11 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-    def login(self) -> None:
+    def login(self, username:str="") -> None:
+        if username:
+            main = Lobby(username=username, url=self.url)
+            self.close()
+            main.show()
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
         self.username = self.clear_spaces(self.usernameText.text())
         self.__password = remove_spaces(self.passwordText.text())
@@ -780,7 +859,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.textBrowser.append("")
             return 2
         
-        elif self.previous_message_date.month == message_date.month and self.previous_message_date.day < messageDate.day:
+        elif self.previous_message_date.month == message_date.month and self.previous_message_date.day < message_date.day:
             self.previous_message_date = message_date
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + message_date.strftime("%d/%m/%Y") + "</b>")
@@ -1870,7 +1949,7 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
             self.textBrowser.append("")
             return 2
         
-        elif self.previous_message_date.month == message_date.month and self.previous_message_date.day < messageDate.day:
+        elif self.previous_message_date.month == message_date.month and self.previous_message_date.day < message_date.day:
             self.previous_message_date = message_date
             self.textBrowser.setAlignment(QtCore.Qt.AlignCenter)
             self.textBrowser.append("<b>" + message_date.strftime("%d/%m/%Y") + "</b>")
@@ -1888,6 +1967,8 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
             return self.close()
     
         if rs.status_code == 200:
+            is_online = rs.json()["isOnline"]
+            self.serverNameLabel.setText(self.server_name + ("(online)" if is_online else "(offline)"))
             messages = rs.json()['messages'] 
             if messages:
                 for message in messages:
@@ -2113,7 +2194,8 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
             url=self.__url + "/get_private_messages", 
             ts=self.timestamp, 
             serv_id=self.chat_id, 
-            PM=True)
+            PM=True,
+            companion=self.server_name)
         self.msg_thread.load_finished.connect(self.update_private_messages)
         self.msg_thread.finished.connect(self.msg_thread.deleteLater)
         self.msg_thread.start()

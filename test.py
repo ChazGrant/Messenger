@@ -7,9 +7,12 @@ import random
 import hashlib
 import re
 
-def func(a: str) -> str:
-    print(a + a)
+companion = "Илья"
 
-    return 6
+with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        is_online = cur.execute(f"SELECT `isOnline` FROM users WHERE `username`='{companion}'").fetchone()[0].split()
 
-print(func("f"))
+is_online = '1' in is_online
+
+print(is_online)

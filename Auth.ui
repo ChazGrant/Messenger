@@ -199,6 +199,32 @@ QLineEdit{
       <string>Запомнить меня</string>
      </property>
     </widget>
+    <widget class="QScrollArea" name="users">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>100</y>
+       <width>311</width>
+       <height>221</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: transparent;</string>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>311</width>
+        <height>221</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QToolButton" name="toolButton">
     <property name="geometry">
