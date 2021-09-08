@@ -2,10 +2,12 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel, QFrame, QAbstractItemView
 from PyQt5.QtCore import QPoint, QThread, pyqtSignal
+from PyQt5 import Qt
 
 import AuthUI
 import MainUI
 import LobbyUI
+import serverLoginUI
 import downloadUI
 import AdminUI
 import searchFormUI
@@ -13,7 +15,7 @@ import userCreatorUI
 import SecondaryUI
 import resources
 
-import json
+import pickle
 import requests
 import hashlib
 import datetime
@@ -80,8 +82,8 @@ def load_data(url: str):
         Иначе возвращает 0
     '''
     try:
-        with open("userdata/data.json", "r") as file:
-            saved_data = json.load(file)
+        with open("userdata/data.pickle", "rb") as file:
+            saved_data = pickle.load(file)
         if "hash" not in saved_data:
             return 0
 
@@ -215,6 +217,25 @@ class LoadUsersThread(QThread):
             self.load_finished.emit(rs)
 
 
+class PushButton(QPushButton):
+    right_click = pyqtSignal()
+    left_click = pyqtSignal()
+    def __init__(self, username, parent=None):
+        super(PushButton, self).__init__(parent)
+        self.setText(username)
+        self.mouse_event:int = 0
+        
+
+    def mousePressEvent(self, event):
+        if event.button() == 2:
+            self.mouse_event = 2
+            self.right_click.emit()
+        elif event.button() == 1:
+            self.mouse_event = 1
+            self.left_click.emit()
+        event.accept()
+
+
 class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
     def __init__(self, url:str=URL, key:str=KEY) -> None:
         super().__init__()
@@ -223,72 +244,19 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.oldPos = self.pos()
         self.__key = key
         self.__url = url
-
+        self.is_login_showed = False
         self.users.setAlignment(QtCore.Qt.AlignTop)
         self.users.setWidgetResizable(False)
 
-       
-        users = [f for _, _, f in os.walk("userdata")]
+        self.showSavedUsersButton.setToolTip("Показать/Скрыть ваши аккаунты")
 
-
-        if users:
-            self.layout = QVBoxLayout()
-            successful_buttons = 0
-            users = users[0]
-            saved_data = list()
-
-            for user in users:
-                with open(f"userdata/{user}", "r") as file:
-                    tmp = json.load(file)
-                    saved_data.append({
-                        "username": tmp["username"],
-                        "hash": tmp["hash"]
-                    })
-
-            time = 100
-
-            for el in saved_data:
-
-                response = requests.get(self.__url + "/check_for_session", json={
-                    "username": el["username"], 
-                    "hash": el["hash"]
-                })
-
-                try:
-                    username = response.json()["username"]
-                    button = QPushButton(username, self)
-                    button.setFixedSize(250, 30)
-                    button.pressed.connect(lambda key=username: self.login(username))
-                    successful_buttons += 1
-                except:
-                    pass
-                
-
-                # Задержка перед созданием следующей кнопки
-                loop = QtCore.QEventLoop()
-                QtCore.QTimer.singleShot(time, loop.quit)
-                loop.exec_()
-
-                self.layout.addWidget(button)
-                widget = QWidget()
-                widget.setLayout(self.layout)
-                self.users.setWidget(widget)
-            if successful_buttons:
-                self.hide_login()
-                self.registrateButton.setText("Вход/Регистрация")
-                self.registrateButton.pressed.connect(self.show_login)
-            else:
-                self.users.hide()
-                self.registrateButton.pressed.connect(self.registration)
-        else:
-            self.users.hide()
-            self.registrateButton.pressed.connect(self.registration)
-
-        
+        self.create_saved_users()
 
         # Прикрепление событий к каждой кнопке
         self.loginButton.pressed.connect(self.login)
         self.exitButton.pressed.connect(self.close)
+        self.registrateButton.pressed.connect(self.registration)
+        self.showSavedUsersButton.pressed.connect(self.show_hide_login)
 
         # Установка картинки для кнопки выхода
         self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
@@ -297,32 +265,137 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
-    def hide_login(self) -> None:
-        self.usernameText.hide()
-        self.passwordText.hide()
-        self.loginButton.hide()
-        self.label_2.hide()
-        self.rememberMe.hide()
+    def create_saved_users(self) -> None:
+        users = [f for _, _, f in os.walk("userdata")]
+
+        if users:
+            self.layout = QVBoxLayout()
+            users = users[0]
+            self.saved_data = list()
+
+
+            for user in users:
+                with open(f"userdata/{user}", "rb") as file:
+                    try:
+                        tmp = pickle.load(file)
+                    except:
+                        continue
+                    self.saved_data.append({
+                        "username": tmp["username"],
+                        "hash": tmp["hash"]
+                    })
+
+            successful_buttons = 0
+
+            for el in self.saved_data:
+
+                response = requests.get(self.__url + "/check_for_session", json={
+                    "username": el["username"], 
+                    "hash": el["hash"]
+                })
+
+                if "badHash" in response.json():
+                    continue
+
+                username = response.json()["username"]
+                button = PushButton(username, self)
+                button.setToolTip("ПКМ для удаления пользователя")
+                
+                button.setFixedSize(250, 30)
+
+                button.right_click.connect(lambda key=username: self.remove_user(key))
+                button.left_click.connect(lambda key=username: self.login(key))
+
+                successful_buttons += 1
+
+                try:
+                    self.layout.addWidget(button)
+                    widget = QWidget()
+                    widget.setLayout(self.layout)
+                    self.users.setWidget(widget)
+                except:
+                    pass
+                
+            if successful_buttons:
+                self.is_login_showed = True
+                self.show_hide_login()
+            else:
+                self.is_login_showed = False
+                self.showSavedUsersButton.hide()
+                self.show_hide_login()
+        else:
+            self.is_login_showed = False
+            self.showSavedUsersButton.hide()
+            self.show_hide_login()
+        
+    def remove_user(self, username):
+        return show_message(username)
+        tmp_users = [f for _, _, f in os.walk("userdata")]
+        if tmp_users:
+            tmp_users = tmp_users[0]
+        else:
+            return
+        for f in tmp_users:
+            with open("userdata/" + f, "rb") as file:
+                try:
+                    tmp = pickle.load(file)
+                except:
+                    continue
+
+                if tmp["username"] == encrypt(username, self.__key):
+                    open("userdata/" + f, "wb")
+                    break
+            
+        self.create_saved_users()
+
+    def show_hide_login(self) -> None:
+        if self.is_login_showed:
+            self.users.show()
+
+            self.label.setText("Ваши аккаунты")
+
+            self.usernameText.hide()
+            self.passwordText.hide()
+            self.loginButton.hide()
+            self.registrateButton.hide()
+            self.label_2.hide()
+            self.rememberMe.hide()
+
+            self.is_login_showed = False
+
+        else:
+            self.users.hide()
+
+            self.label.setText("Вход в аккаунт")
+
+            self.usernameText.show()
+            self.passwordText.show()
+            self.loginButton.show()
+            self.label_2.show()
+            self.rememberMe.show()
+            self.registrateButton.show()
+
+            self.is_login_showed = True
 
     def save_data(self, username: str) -> int:
+        if (os.path.exists("userdata/" + username + ".pickle")):
+            return 1
+
         response = requests.get(self.__url + "/create_session", json={
                 "username": username
             })
         if "someProblems" in response.json():
             show_error("Возникли неполадки во время сохранения данных")
             return 0
-        with open("userdata/data.json", "w+") as file:
+       
+        
+        with open(f"userdata/{username}.pickle", "wb") as file:
             # Запись json-данных в файл 
-            json.dump({
+            pickle.dump({
                 "username": encrypt(username, self.__key),
                 "hash": response.json()["hash"]
             }, file) 
             return 1
-
-    def show_login(self) -> None:
-        self.users.hide()
-        self.registrateButton.pressed.connect(self.registration)
-        self.registrateButton.setText("Регистрация")
 
     def clear_spaces(self, string: str) -> str:
         string = string.replace(' ', '')
@@ -342,9 +415,9 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
     def login(self, username:str="") -> None:
         if username:
-            main = Lobby(username=username, url=self.url)
+            main = Lobby(username=username, url=self.__url)
             self.close()
-            main.show()
+            return main.show()
         ### Извлекаем имя пользователя и пароль из текстовых полей ###
         self.username = self.clear_spaces(self.usernameText.text())
         self.__password = remove_spaces(self.passwordText.text())
@@ -466,10 +539,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
-
-        # TODO посмотреть зачем они нужны
-        self.current_users = []
-        self.is_not_in_users = False
+        self.hash = ""
 
         # Скрытие кнопок, которые потом появляются при поиске сообщений
         self.forwardButton.hide()
@@ -668,7 +738,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             if "someProblems" in rs.json():
                 return show_error("Возникли неполадки")
             res = rs.json()['res']
-            is_logged = rs.json()['userIsLoggedIn']
 
             if int(rs.json()["isBanned"]):
                 self.timer.stop()
@@ -681,132 +750,146 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
             for user_info in res:
                 user = user_info.split()
-                if user[0] not in self.current_users:
-                    self.current_users.append(user[0])
-                    self.is_not_in_users = True
-            if self.is_not_in_users or is_logged:
-                online_users = list()
-                offline_users = list()
-                for user_info in res:
-                    user = user_info.split()
-                    if user[0] == self.username:
-                        continue
-                    
-                    user[1] = int(user[1])
-                    last_time_seen = datetime.datetime.fromtimestamp(float(user[2]))
-                    current_time = datetime.datetime.fromtimestamp(time.time())
-                    if (current_time.year > last_time_seen.year):
-                        if (current_time.day > last_time_seen.day) and (current_time.month == last_time_seen.month):
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
-                        elif (current_time.month > last_time_seen.month):
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
-                        else:
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
-                    else:
-                        if (current_time.day > last_time_seen.day) and (current_time.month == last_time_seen.month):
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m')}"
-                        elif (current_time.month > last_time_seen.month):
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m')}"
-                        else:
-                            status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M')}"
-                    if user[1]:
-                        online_users.append(user[0] + f' {status}')
-                    else:
-                        offline_users.append(user[0] + f' {status}')
+
+            server_hash = rs.json()["serverHash"]
+
+            if self.hash == "":
+                self.hash = server_hash
+
+            elif server_hash == self.hash:
+                return
+
+            online_users = list()
+            offline_users = list()
+
+            self.hash = server_hash
+
+            for user_info in res:
+                user = user_info.split()
+
+                if user[0] == self.username:
+                    continue
                 
-                self.layout = QVBoxLayout()
+                user[1] = int(user[1])
+                last_time_seen = datetime.datetime.fromtimestamp(float(user[2]))
+                current_time = datetime.datetime.fromtimestamp(time.time())
 
-                self.users_buttons = list()
+                if (current_time.year > last_time_seen.year):
+                    if (current_time.day > last_time_seen.day) and (current_time.month == last_time_seen.month):
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
 
-                # Последовательность при которой выводятся кнопки пользователей
-                if self.isOnline.isChecked():
-                    for onu in online_users:
-                        if onu.split()[0] == self.username:
-                            continue
-                        
-                        # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
-                        button = QPushButton(onu.split()[0], objectName="whisperButton")
-                        button.setFixedSize(220, 30)
-                        button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
-                        button.installEventFilter(self)
-                        button.setStyleSheet('''
-                            color: white;
-                            background: rgb(0, 170, 127);
-                        ''')
-                        button.setToolTip(onu.split()[1])
-                        self.users_buttons.append(button)
+                    elif (current_time.month > last_time_seen.month):
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
 
-                        self.layout.addWidget(button) 
-                    for ofu in offline_users:
-                        if ofu.split()[0] == self.username:
-                            continue
-
-                        # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
-                        button = QPushButton(ofu.split()[0], objectName="whisperButton")
-                        button.setFixedSize(220, 30)
-                        button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
-                        button.installEventFilter(self)
-                        button.setStyleSheet('''
-                            color: white;
-                            background: rgb(0, 170, 127);
-                        ''')
-                        self.users_buttons.append(button)
-
-                        # Установка текста при наведении на кнопку
-                        try:
-                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
-                        except:
-                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
-
-                        self.layout.addWidget(button)
-
-                    widget = QWidget()
-                    widget.setLayout(self.layout)
-                    self.scrollArea.setWidget(widget)
+                    else:
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m/%y')}"
 
                 else:
-                    for ofu in offline_users:
-                        if ofu.split()[0] == self.username:
-                            continue
+                    if (current_time.day > last_time_seen.day) and (current_time.month == last_time_seen.month):
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m')}"
 
-                        button = QPushButton(ofu.split()[0], objectName="whisperButton")
-                        button.setStyleSheet('''
-                            color: white;
-                            background: rgb(0, 170, 127);
-                        ''')
-                        button.setFixedSize(30, 30)
-                        button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
-                        self.users_buttons.append(button)
+                    elif (current_time.month > last_time_seen.month):
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M %d/%m')}"
 
-                        try:
-                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
-                        except:
-                            button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+                    else:
+                        status = "Online" if user[1] else f"Offline {last_time_seen.strftime('%H:%M')}"
 
-                        self.layout.addWidget(button)
-                    for onu in online_users:
-                        if onu.split()[0] == self.username:
-                            continue
-
-                        button = QPushButton(onu.split()[0], objectName="whisperButton")
-                        button.setFixedSize(220, 30)
-                        button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
-                        button.installEventFilter(self)
-                        button.setStyleSheet('''
-                            color: white;
-                            background: rgb(0, 170, 127);
-                        ''')
-                        button.setToolTip(onu.split()[1])
-                        self.users_buttons.append(button)
-
-                        self.layout.addWidget(button) 
-
-                    widget = QWidget()
-                    widget.setLayout(self.layout)
+                if user[1]:
+                    online_users.append(user[0] + f' {status}')
                     
+                else:
+                    offline_users.append(user[0] + f' {status}')
+            
+            self.layout = QVBoxLayout()
 
-                # Тест не проводился
-                self.isNotInUsers = False
+            self.users_buttons = list()
+
+            # Последовательность при которой выводятся кнопки пользователей
+            if self.isOnline.isChecked():
+                for onu in online_users:
+                    if onu.split()[0] == self.username:
+                        continue
+                    
+                    # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
+                    button = QPushButton(onu.split()[0], objectName="whisperButton")
+                    button.setFixedSize(220, 30)
+                    button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+                    button.installEventFilter(self)
+                    button.setStyleSheet('''
+                        color: white;
+                        background: rgb(0, 170, 127);
+                    ''')
+                    button.setToolTip(onu.split()[1])
+                    self.users_buttons.append(button)
+
+                    self.layout.addWidget(button) 
+                for ofu in offline_users:
+                    if ofu.split()[0] == self.username:
+                        continue
+
+                    # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
+                    button = QPushButton(ofu.split()[0], objectName="whisperButton")
+                    button.setFixedSize(220, 30)
+                    button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                    button.installEventFilter(self)
+                    button.setStyleSheet('''
+                        color: white;
+                        background: rgb(0, 170, 127);
+                    ''')
+                    self.users_buttons.append(button)
+
+                    # Установка текста при наведении на кнопку
+                    try:
+                        button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
+                    except:
+                        button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+
+                    self.layout.addWidget(button)
+
+                widget = QWidget()
+                widget.setLayout(self.layout)
+                self.scrollArea.setWidget(widget)
+
+            else:
+                for ofu in offline_users:
+                    if ofu.split()[0] == self.username:
+                        continue
+
+                    button = QPushButton(ofu.split()[0], objectName="whisperButton")
+                    button.setStyleSheet('''
+                        color: white;
+                        background: rgb(0, 170, 127);
+                    ''')
+                    button.setFixedSize(30, 30)
+                    button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                    self.users_buttons.append(button)
+
+                    try:
+                        button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
+                    except:
+                        button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+
+                    self.layout.addWidget(button)
+                for onu in online_users:
+                    if onu.split()[0] == self.username:
+                        continue
+
+                    button = QPushButton(onu.split()[0], objectName="whisperButton")
+                    button.setFixedSize(220, 30)
+                    button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+                    button.installEventFilter(self)
+                    button.setStyleSheet('''
+                        color: white;
+                        background: rgb(0, 170, 127);
+                    ''')
+                    button.setToolTip(onu.split()[1])
+                    self.users_buttons.append(button)
+
+                    self.layout.addWidget(button) 
+
+                widget = QWidget()
+                widget.setLayout(self.layout)
+                    
                 self.scrollArea.setWidget(widget)
         else:
             return self.close()
@@ -1147,12 +1230,6 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             }
         )
 
-        try:
-            with open("userdata/data.json", "w") as js:
-                js.write("")
-        except:
-            pass
-
         self.close()
         self.timer.stop()
         self.main = Auth()
@@ -1240,9 +1317,11 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
         self.updateButton.hide()
         for i in res:
+            # i[0] - id
+            # i[1] - server_name
             button = QPushButton(i[1], self)
             button.setFixedSize(186, 30)
-            button.pressed.connect(lambda key=i[0]: self.connect(key))
+            button.pressed.connect(lambda key=[i[0], i[1]]: self.show_server_login(key[1], key[0]))
 
             # Задержка перед созданием следующей кнопки
             loop = QtCore.QEventLoop()
@@ -1258,12 +1337,6 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
     def log_off(self) -> None:
         self.close()
-        
-        try:
-            with open("userdata/data.json", "w") as js:
-                js.write("")
-        except:
-            pass
 
         self.main = Auth()
         return self.main.show()
@@ -1277,7 +1350,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
             all_files = resp.json()['allFiles']
 
-            self.main = DownloadHub(allFiles)
+            self.main = DownloadHub(all_files)
             self.main.setWindowFlags(QtCore.Qt.FramelessWindowHint)
             self.main.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -1342,32 +1415,31 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             else:
                 break
 
-    def connect(self, id:int) -> None:
-        server_password, ok_is_pressed = QInputDialog.getText(
-            self, "Требуется пароль", "Введите пароль: ", QLineEdit.Password, "")
-        if ok_is_pressed:
-            response = requests.get(self.__url + "/connect",
-                                    json={
-                                        'server_id': id,
-                                        'username': self.username,
-                                        'password': hashlib.md5(server_password.encode()).hexdigest()
-                                    })
+    def show_server_login(self, server_name: str, id: int) -> None:
 
-            if response.status_code == 200:
-                if "badPassword" in response.json():
-                    return show_error("Неверный пароль")
+        res = requests.get(self.__url + "/get_users_amount", json={
+            "id": id
+        })
 
-                if "isBanned" in response.json():
-                    return show_error("Вы были забанены на этом сервере")
+        if res.status_code == 200:
+            server_name = server_name
+            users_amount = res.json()["users_amount"]
 
-                if "someProblems" in response.json():
-                    return show_error("Возникли неполадки с сервером")
+        self.main = serverLogin(
+            url=self.__url,
+            username=self.username,
+            server_id=id,
+            name=server_name,
+            users_amount=users_amount
+            )
+        self.main.show()
 
-                self.close()
-                self.main = Chat(username=self.username, url=self.__url, server_id=id)
-                return self.main.show()
-            else:
-                show_error("Беды с сервером")
+        self.main.login_succeeded.connect(lambda key=id: self.connect(id))
+
+    def connect(self, id: int) -> None:
+        self.main = Chat(self.username, self.__url, id)
+        self.main.show()
+        return self.close()
 
 
 class AdminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
@@ -1400,7 +1472,8 @@ class AdminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
 
     def insert_users(self) -> None:
         res = requests.get(self.__url + "/get_users", json={
-                            "server_id": self.server_id
+                            "server_id": self.server_id,
+                            "for_admin": True
                         })
         '''
             0 - username
@@ -1435,6 +1508,8 @@ class AdminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
                         QtWidgets.QTreeWidgetItem(us, [f"Общее время онлайн: {self.calculate_time(float(u[4]))}"])
             return
 
+        if "someProblems" in res.json():
+            return show_error(res.json()["someProblems"])
         users = res.json()['res']
         for user in users:
             u = user.split()
@@ -1513,7 +1588,7 @@ class AdminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
                 banned = "разбанен" if self.tree.selectedItems()[0].child(0).text(0).split("Статус: ")[1] \
                     == "Banned" else "забанен"
 
-                showMessage(self.tree.selectedItems()[0].text(0) + " был " + banned)
+                show_message(self.tree.selectedItems()[0].text(0) + " был " + banned)
                 self.tree.clear()
                 self.insertUsers()
     
@@ -2200,6 +2275,57 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
         self.msg_thread.finished.connect(self.msg_thread.deleteLater)
         self.msg_thread.start()
 
+class serverLogin(QtWidgets.QMainWindow, serverLoginUI.Ui_MainWindow):
+    login_succeeded = pyqtSignal()
+    def __init__(self, username:str, server_id:int, name:str, users_amount:int, url:str=URL) -> None:
+        super().__init__()
+        self.setupUi(self)
+
+        self.username = username
+        self.server_id = server_id
+        self.__url = url
+
+        self.serverName.setText(name)
+        self.usersAmount.setText(self.usersAmount.text() + str(users_amount))
+
+        self.loginButton.pressed.connect(self.login)
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.oldPos = self.pos()
+
+    
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+    def login(self) -> None:
+        response = requests.get(self.__url + "/connect",
+                                    json={
+                                        'server_id': self.server_id,
+                                        'username': self.username,
+                                        'password': hashlib.md5(self.passwordInput.text().encode()).hexdigest()
+                                    })
+
+        if response.status_code == 200:
+            if "badPassword" in response.json():
+                return show_error("Неверный пароль")
+
+            if "isBanned" in response.json():
+                return show_error("Вы были забанены на этом сервере")
+
+            if "someProblems" in response.json():
+                return show_error("Возникли неполадки с сервером")
+
+            self.login_succeeded.emit()
+            return self.close()
+
+
 
 if __name__ == "__main__":
     try:
@@ -2209,14 +2335,8 @@ if __name__ == "__main__":
         pass
     app = QtWidgets.QApplication([])
 
-    data = load_data(url=URL)
-    if data:
-        window = Lobby(username=data, url=URL)
-        window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
-        window.show()
-        app.exec_()
-    else:
-        window = Auth()
-        window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
-        window.show()
-        app.exec_()
+
+    window = Auth()
+    window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
+    window.show()
+    app.exec_()

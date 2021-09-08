@@ -10,17 +10,7 @@ import os
 import zipfile
 import random
 
-# PROBLEM(S)
 
-###
-'''
-    Понять как обновлять список пользователей на стороне клиента только тогда, когда 
-    меняется статус одного из них
-'''
-###
-def get_key(keys):
-    keys = str(keys)
-    return int(keys[keys.index("[") + 1:keys.index("]")])
 
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -28,86 +18,21 @@ app = Flask(__name__)
 server_start = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 last_timestamps = dict()
 
-# PIZDEC
-with sq.connect("Messenger.db") as conn:
-    cur = conn.cursor()
-
-    # Возвращает несколько списков со списками каждого атрибута
-    # =>[(isOnline, servers_id, user_id), ...]
-    allUsersIsOnline = cur.execute(
-        "SELECT `isOnline`, `servers_id`, `user_id` FROM users"
-    ).fetchall()
-
-    # Возвращает все айди серверов в tuple
-    # => [(server_id), ...]
-    allServersID = cur.execute(
-        "SELECT `server_id` FROM servers"
-    ).fetchall()
-    
-    # Все айди серверов в удобной форме
-    # [1, 2, 3, 4, 5]
-    servers_id = [server_id[0] for server_id in allServersID]
-
-    # 3 списка для удобного доступа к информации о пользователях
-    # 0 - для первого пользователя и тд
-    allUsersIsOnline_f = []
-    allServersID_f = []
-    users_id = []
-
-    for userIsOnline in allUsersIsOnline:
-        usersIsOnline = [us for us in userIsOnline[0] if us != " "]
-        serversForUsers = [sfu for sfu in userIsOnline[1] if sfu != " "]
-
-        # Добавляем айди каждого пользователя
-        users_id.append(userIsOnline[2])
-        allUsersIsOnline_f.append(usersIsOnline)
-        allServersID_f.append(serversForUsers)
-
-    isLoggedIn = list(dict(list(dict())))
-
-    # i - для добавления в нужный индекс списка
-    # server_id - для словаря
-    for server_id, i in zip(servers_id, range(len(servers_id))):
-        isLoggedIn.append(
-            {
-                server_id: []
-            }
-        )
-
-        # Добавляем инфу про каждого пользователя в словарь
-        for index in range(len(users_id)):
-
-            if str(server_id) in allServersID_f[index]:
-                # Для быстрого поиска id сервера в списке allUsersIsOnline_f
-                server_id_index = allServersID_f[index].index(str(server_id))
-                isLoggedIn[i][server_id].append(
-                    {
-                        users_id[index]: int(allUsersIsOnline_f[index][server_id_index])
-                    }
-                )
-
-'''
-### Я хз зачем я это писал ###
-    # i - Номер списка (по порядку всех серверов)
-    # ii - айди сервера
-    for i in range(len(isLoggedIn)):
-        for ii in isLoggedIn[i]:
-            print(isLoggedIn[i][ii][0])
-        #print(get_key(i.get_keys()))
-    
-    # Доступ к i-тому словарю списка
-    for server_i in range(len(isLoggedIn)):
-        # Доступ к i-тому словарю
-        for i in isLoggedIn[server_i]:
-            for dict_elem in isLoggedIn[server_i][i]:
-                print(dict_elem)
-            # print(i[1][0].values())
-            # exit()
-            # if get_key(i.keys()) == 1:
-            #     i[1][0][16] = 1
-'''
+servers_hash = list()
 
 hash_ = lambda text: hashlib.md5(text.encode()).hexdigest()
+
+def get_key(keys):
+    keys = str(keys)
+    return int(keys[keys.index("[") + 1:keys.index("]")])
+
+def generate_random_hash() -> str:
+	out = ""
+
+	for _ in range(16):
+		out += random.choice(ALPHABET)
+
+	return hashlib.md5(out.encode()).hexdigest()
 
 def cleanhtml(raw_html):
     cleanr = re.compile('<.*?>')
@@ -221,9 +146,6 @@ def connect():
             username = request.json['username']
             password = request.json['password']
 
-            user_id = int(cur.execute(
-                f"SELECT user_id FROM `users` WHERE `username`='{username}'").fetchone()[0])
-
             rightPassword = cur.execute(
                 f"SELECT password FROM `servers` WHERE server_id={server_id}").fetchone()[0]
 
@@ -283,18 +205,16 @@ def connect():
                 "someProblems": True
                 }
 
-    try:
-        isLoggedIn[
-            [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
-        ][int(server_id)][0][user_id] = 1
-    except KeyError:
-        isLoggedIn.append(
-            {
-                int(server_id) : 
-                    {
-                        user_id: 1
-                    }
-            })
+    servers_id = [get_key(servers_hash[i].keys()) for i in range(len(servers_hash))]
+    server_id = int(server_id)
+
+    if server_id in servers_id:
+        servers_hash[servers_id.index(server_id)][server_id] = generate_random_hash()
+    else:
+        servers_hash.append(
+			{
+				server_id: generate_random_hash()
+			})
 
     return {
         "ok": True
@@ -470,6 +390,21 @@ def get_servers():
                 "someProblems": True
                 }
 
+@app.route("/get_users_amount")
+def get_users_amount():
+    with sq.connect("Messenger.db") as conn:
+        id = request.json["id"]
+        users_amount = 0
+
+        cur = conn.cursor()
+        all_ids = cur.execute("SELECT `servers_id` FROM `users`").fetchall()
+
+        for cur_id in all_ids:
+            if str(id) in cur_id[0].split():
+                users_amount += 1
+        return {
+            "users_amount": users_amount
+        }
 
 @app.route("/upload")
 def upload():
@@ -754,74 +689,83 @@ def check_for_session():
 
 @app.route("/get_users")
 def get_users():
+    server_id = str(request.json["server_id"])
+    try:
+        for_admin = int(request.json["for_admin"])
+    except:
+        for_admin = 0
+
     with sq.connect("Messenger.db") as conn:
-        server_id = str(request.json["server_id"])
         cur = conn.cursor()
 
-        is_logged = 0
+        if server_id == '0':
+            allServersId = cur.execute(
+                f"SELECT server_id FROM `servers`").fetchall()
+            allServersId = " ".join(str(i[0]) for i in allServersId).split()
+
+            res = {}
+
+            for server_id in allServersId:
+                user_info = cur.execute(
+                    f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
+                ).fetchall()
+
+                returnList = list()
+                for user in user_info:
+                    if server_id in user[1].split():
+                        server_id_ = user[1].split().index(server_id)
+                        isOnline = user[2].split()[server_id_]
+                        lastSeen = user[3].split()[server_id_]
+                        entryTime = user[4].split()[server_id_]
+                        timeSpent = user[5].split()[server_id_]
+                        isBanned = user[6].split()[server_id_]
+                        returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
+                
+                res[server_id] = returnList
+
+
+            return {
+                'res': res,
+            }
+
+        if for_admin and server_id:
+            user_info = cur.execute(
+            f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
+        ).fetchall()
+            returnList = list()
+            for user in user_info:
+                server_id_ = user[1].split().index(server_id)
+                isOnline = user[2].split()[server_id_]
+                lastSeen = user[3].split()[server_id_]
+                entryTime = user[4].split()[server_id_]
+                timeSpent = user[5].split()[server_id_]
+                isBanned = user[6].split()[server_id_]
+                returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
+
+
+            res = sorted(returnList, key=lambda tup: tup[1], reverse=True)
+
+            return {
+                'res': res
+            }
+
+
         is_current_user_banned = 0
 
         try:
             
             username = request.json["username"]
             
-            user_id = int(cur.execute(
-                f"SELECT `user_id` FROM users WHERE `username` LIKE '%{username}%';"
-            ).fetchone()[0])
-            
-            try:
-                if isLoggedIn[
-                    [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
-                ][int(server_id)][0][user_id]:
-                    is_logged = 1
-            except KeyError:
-                isLoggedIn.append(
-                    {
-                        int(server_id) : 
-                            {
-                                user_id: 1
-                            }
-                    })
             
             server_id_ = cur.execute(
                 f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{username}%' ").fetchone()[0].split().index(server_id)
             user_is_banned = cur.execute(
                 f"SELECT `isBanned` FROM users WHERE `username` LIKE '%{username}%'").fetchone()[0].split()
             is_current_user_banned = int(user_is_banned[server_id_])
-        except:
+        except Exception as e:
             return {
-                "someProblems": True
+                "someProblems": str(e)
             }
-
-
-    if server_id == '0':
-        allServersId = cur.execute(
-            f"SELECT server_id FROM `servers`").fetchall()
-        allServersId = " ".join(str(i[0]) for i in allServersId).split()
-
-        res = {}
-
-        for server_id in allServersId:
-            user_info = cur.execute(
-                f"SELECT `username`, `servers_id`, `isOnline`, `lastSeen`, `entryTime`, `timeSpent`, `isBanned` FROM users WHERE `servers_id` LIKE '%{server_id}%';"
-            ).fetchall()
-
-            returnList = list()
-            for user in user_info:
-                if server_id in user[1].split():
-                    server_id_ = user[1].split().index(server_id)
-                    isOnline = user[2].split()[server_id_]
-                    lastSeen = user[3].split()[server_id_]
-                    entryTime = user[4].split()[server_id_]
-                    timeSpent = user[5].split()[server_id_]
-                    isBanned = user[6].split()[server_id_]
-                    returnList.append(user[0] + " " + isOnline + " " + lastSeen + " " + entryTime + " " + timeSpent + " " + isBanned)
-            
-            res[server_id] = returnList
-
-        return {
-            'res': res,
-        }
 
 
     user_info = cur.execute(
@@ -840,10 +784,13 @@ def get_users():
 
     res = sorted(returnList, key=lambda tup: tup[1], reverse=True)
 
+    servers_id = [get_key(servers_hash[i].keys()) for i in range(len(servers_hash))]
+    server_id = int(server_id)
+
     return {
         'res': res,
-        'userIsLoggedIn': is_logged,
-        "isBanned": is_current_user_banned
+        "isBanned": is_current_user_banned,
+        "serverHash": servers_hash[servers_id.index(server_id)][server_id]
     }
     
 @app.route("/ban_user")
@@ -891,8 +838,6 @@ def disconnect():
         try:
             cur = conn.cursor()
 
-            user_id = int(cur.execute(
-                f"SELECT user_id FROM `users` WHERE `username`='{uname}'").fetchone()[0])
             server_id_ = cur.execute(
                     f"SELECT servers_id FROM `users` WHERE `username` LIKE '%{uname}%' ").fetchone()[0].split().index(server_id)
             is_online = cur.execute(
@@ -919,9 +864,16 @@ def disconnect():
                 "someProblems": True
             }
 
-    isLoggedIn[
-        [get_key(i.keys()) for i in isLoggedIn].index(int(server_id))
-    ][int(server_id)][0][user_id] = 0
+    servers_id = [get_key(servers_hash[i].keys()) for i in range(len(servers_hash))]
+    server_id = int(server_id)
+
+    if server_id in servers_id:
+        servers_hash[servers_id.index(server_id)][server_id] = generate_random_hash()
+    else:
+        servers_hash.append(
+            {
+                server_id: generate_random_hash()
+            })
 
     return {
         "ok": True

@@ -6,13 +6,12 @@ from crypt import encrypt, decrypt
 import random
 import hashlib
 import re
+import pickle
+import webbrowser
 
-companion = "Илья"
 
-with sq.connect("Messenger.db") as conn:
-        cur = conn.cursor()
-        is_online = cur.execute(f"SELECT `isOnline` FROM users WHERE `username`='{companion}'").fetchone()[0].split()
+with open("D:/GitHub/Messenger/static/send.docx", "rb") as f:
+        data = f.read()
 
-is_online = '1' in is_online
-
-print(is_online)
+url = 'file:///'
+webbrowser.open(data, new=2)  # open in new tab

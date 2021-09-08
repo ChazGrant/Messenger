@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>570</width>
+    <height>266</height>
+   </rect>
+  </property>
+  <property name="cursor">
+   <cursorShape>ArrowCursor</cursorShape>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">*{
+	font-family: century gothic;
+	font-size: 20px;
+}
+#exitButton{
+	/*background-color: red;*/
+	border-radius: 15px;
+	background-size: 5px;
+}
+QScrollArea{
+	background-color: #333;
+}
+QMainWindow{
+	background-color: transparent;
+}
+#passwordText{
+	type: password;
+}
+QFrame{
+	background: #333;
+	border-radius: 15px;
+}
+QPushButton{
+	border-radius: 15px;
+	background: rgb(0, 170, 127);
+	color: white;
+}
+QPushButton:hover{
+	background: #333;
+	color: rgb(0, 170, 127);
+}
+#logOffButton{
+	background: rgb(255, 98, 51);
+}
+#logOffButton:hover{
+	background: #333;
+	color: rgb(255, 98, 51);
+}
+QInputDialog{
+	width: 50px;
+	height: 50px;
+}
+#toolButton{
+	border-radius: 60px;
+	background: red;
+}
+QLabel{
+	color: white;
+}
+QLineEdit{
+	padding-bottom: 5px;
+	background: transparent;
+	border: none;
+	color: #717072;
+	border-bottom: 1px solid #717072;
+}
+QInputDialog QLabel{
+	background: transparent;
+	color: black;
+	border-radius: 15px;
+}
+QInputDialog QPushButton{
+	background: transparent;
+	color: black;
+}
+QInputDialog QPushButton:hover{
+	background: transparent;
+	color: red;
+}</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QFrame" name="frame">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>541</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="serverName">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>521</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-size: 28px;</string>
+     </property>
+     <property name="text">
+      <string>Название сервера</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="exitButton">
+     <property name="geometry">
+      <rect>
+       <x>470</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>cross.png</normaloff>cross.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="showUsersButton">
+     <property name="geometry">
+      <rect>
+       <x>430</x>
+       <y>10</y>
+       <width>41</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: transparent</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>settings.png</normaloff>settings.png</iconset>
+     </property>
+     <property name="shortcut">
+      <string/>
+     </property>
+     <property name="autoRepeatDelay">
+      <number>300</number>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="createServerButton">
+     <property name="geometry">
+      <rect>
+       <x>280</x>
+       <y>20</y>
+       <width>31</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background:transparent</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>plus_PNG121.png</normaloff>plus_PNG121.png</iconset>
+     </property>
+    </widget>
+    <widget class="QLabel" name="usersAmount">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>60</y>
+       <width>521</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-size: 28px;</string>
+     </property>
+     <property name="text">
+      <string>Кол-во пользователей:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="passwordInput">
+     <property name="geometry">
+      <rect>
+       <x>22</x>
+       <y>120</y>
+       <width>161</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="placeholderText">
+      <string>Введите пароль</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loginButton">
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>110</y>
+       <width>191</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Вход</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>570</width>
+     <height>29</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
