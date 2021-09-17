@@ -8,5 +8,6 @@
     <file>Images/send.png</file>
     <file>Images/disconnect.png</file>
     <file>Images/exit_from_acc.png</file>
+    <file>Images/threebars.png</file>
   </qresource>
 </RCC>

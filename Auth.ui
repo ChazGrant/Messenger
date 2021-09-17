@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>471</width>
-    <height>531</height>
+    <height>437</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,9 +62,9 @@ QLineEdit{
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>70</y>
+      <y>30</y>
       <width>441</width>
-      <height>391</height>
+      <height>341</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -73,24 +73,11 @@ QLineEdit{
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QLabel" name="label">
-     <property name="geometry">
-      <rect>
-       <x>140</x>
-       <y>60</y>
-       <width>161</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Вход в аккаунт</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="loginButton">
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>270</y>
+       <y>230</y>
        <width>401</width>
        <height>41</height>
       </rect>
@@ -103,7 +90,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>330</y>
+       <y>280</y>
        <width>401</width>
        <height>41</height>
       </rect>
@@ -116,7 +103,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>131</y>
+       <y>91</y>
        <width>371</width>
        <height>31</height>
       </rect>
@@ -132,7 +119,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>180</y>
+       <y>140</y>
        <width>371</width>
        <height>31</height>
       </rect>
@@ -150,34 +137,11 @@ QLineEdit{
       <string>Пароль</string>
      </property>
     </widget>
-    <widget class="QToolButton" name="exitButton">
-     <property name="geometry">
-      <rect>
-       <x>390</x>
-       <y>20</y>
-       <width>41</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>cross.png</normaloff>cross.png</iconset>
-     </property>
-     <property name="shortcut">
-      <string/>
-     </property>
-     <property name="autoRepeatDelay">
-      <number>300</number>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="rememberMe">
      <property name="geometry">
       <rect>
        <x>320</x>
-       <y>230</y>
+       <y>190</y>
        <width>21</width>
        <height>20</height>
       </rect>
@@ -190,7 +154,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>130</x>
-       <y>230</y>
+       <y>190</y>
        <width>181</width>
        <height>16</height>
       </rect>
@@ -203,7 +167,7 @@ QLineEdit{
      <property name="geometry">
       <rect>
        <x>70</x>
-       <y>100</y>
+       <y>60</y>
        <width>311</width>
        <height>221</height>
       </rect>
@@ -225,41 +189,86 @@ QLineEdit{
       </property>
      </widget>
     </widget>
-    <widget class="QToolButton" name="showSavedUsersButton">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>20</y>
-       <width>41</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>cross.png</normaloff>cross.png</iconset>
-     </property>
-     <property name="shortcut">
-      <string/>
-     </property>
-     <property name="autoRepeatDelay">
-      <number>300</number>
-     </property>
-    </widget>
    </widget>
    <widget class="QToolButton" name="toolButton">
     <property name="geometry">
      <rect>
-      <x>170</x>
+      <x>30</x>
       <y>10</y>
-      <width>121</width>
-      <height>121</height>
+      <width>401</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border-radius: 15px</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>10</y>
+      <width>161</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent</string>
+    </property>
+    <property name="text">
+     <string>Вход в аккаунт</string>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="exitButton">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>20</y>
+      <width>41</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>cross.png</normaloff>cross.png</iconset>
+    </property>
+    <property name="shortcut">
+     <string/>
+    </property>
+    <property name="autoRepeatDelay">
+     <number>300</number>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="showSavedUsersButton">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>20</y>
+      <width>41</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>cross.png</normaloff>cross.png</iconset>
+    </property>
+    <property name="shortcut">
+     <string/>
+    </property>
+    <property name="autoRepeatDelay">
+     <number>300</number>
     </property>
    </widget>
   </widget>

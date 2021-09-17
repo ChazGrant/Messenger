@@ -10,8 +10,4 @@ import pickle
 import webbrowser
 
 
-with open("D:/GitHub/Messenger/static/send.docx", "rb") as f:
-        data = f.read()
-
-url = 'file:///'
-webbrowser.open(data, new=2)  # open in new tab
+print(hashlib.md5("".encode()).hexdigest())

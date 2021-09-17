@@ -519,7 +519,7 @@ def get_files():
         }
 
     if not server_id:
-        files = [f for _, _, f in os.walk("static")][0]
+        files = [f for _, _, f in os.walk("static")]
 
     else:
         server_name = get_server_name_(server_id)

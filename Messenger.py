@@ -8,6 +8,7 @@ import AuthUI
 import MainUI
 import LobbyUI
 import serverLoginUI
+import createServerFormUI
 import downloadUI
 import AdminUI
 import searchFormUI
@@ -27,6 +28,7 @@ from crypt import encrypt, decrypt
 URL = "http://127.0.0.1:5000"
 USERNAME = "CREATOR"
 KEY = 314
+MAX_MESSAGE_LEN = 100
 
 sizes = \
 {
@@ -244,13 +246,11 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.oldPos = self.pos()
         self.__key = key
         self.__url = url
-        self.is_login_showed = False
+        self.is_login_showed = True
         self.users.setAlignment(QtCore.Qt.AlignTop)
         self.users.setWidgetResizable(False)
 
         self.showSavedUsersButton.setToolTip("Показать/Скрыть ваши аккаунты")
-
-        self.create_saved_users()
 
         # Прикрепление событий к каждой кнопке
         self.loginButton.pressed.connect(self.login)
@@ -260,6 +260,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
         # Установка картинки для кнопки выхода
         self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+        self.showSavedUsersButton.setIcon(QtGui.QIcon(":/resources/Images/threebars.png"))
+        
 
         # Прозрачное окно без рамок
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
@@ -267,6 +269,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
     def create_saved_users(self) -> None:
         users = [f for _, _, f in os.walk("userdata")]
+
+        used_usernames = []
 
         if users:
             self.layout = QVBoxLayout()
@@ -298,6 +302,12 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                     continue
 
                 username = response.json()["username"]
+                
+                if username in used_usernames:
+                    continue
+                else:
+                    used_usernames.append(username)
+
                 button = PushButton(username, self)
                 button.setToolTip("ПКМ для удаления пользователя")
                 
@@ -317,19 +327,15 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
                     pass
                 
             if successful_buttons:
-                self.is_login_showed = True
-                self.show_hide_login()
+                self.is_login_showed = False
             else:
                 self.is_login_showed = False
-                self.showSavedUsersButton.hide()
                 self.show_hide_login()
         else:
             self.is_login_showed = False
-            self.showSavedUsersButton.hide()
             self.show_hide_login()
         
     def remove_user(self, username):
-        return show_message(username)
         tmp_users = [f for _, _, f in os.walk("userdata")]
         if tmp_users:
             tmp_users = tmp_users[0]
@@ -362,6 +368,8 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             self.rememberMe.hide()
 
             self.is_login_showed = False
+
+            self.create_saved_users()
 
         else:
             self.users.hide()
@@ -415,6 +423,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
 
     def login(self, username:str="") -> None:
         if username:
+            self.users.setEnabled(False)
             main = Lobby(username=username, url=self.__url)
             self.close()
             return main.show()
@@ -508,6 +517,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.showUsersButton.pressed.connect(self.show_users)
         self.backButton.pressed.connect(self.backward)
         self.forwardButton.pressed.connect(self.forward)
+        self.sortingTypeButton.pressed.connect(self.change_sorting_type)
 
         # Установка иконок для каждой кнопки
         self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
@@ -539,6 +549,8 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.__key = KEY
         self.__url = url
         self.server_id = server_id
+        self.sorting_type = "Online"
+        self.sorting_type_is_changed = False
         self.hash = ""
 
         # Скрытие кнопок, которые потом появляются при поиске сообщений
@@ -551,6 +563,18 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1000)
+
+    def change_sorting_type(self) -> None:
+        self.sorting_type = "Online" if self.sorting_type == "Offline" else "Offline"
+
+        if self.sorting_type == "Online":
+            self.sortingTypeButton.setStyleSheet("background-color: green;")
+            self.sortingTypeButton.setText("Онлайн")
+        else:
+            self.sortingTypeButton.setStyleSheet("background-color: red;")
+            self.sortingTypeButton.setText("Офлайн")
+        
+        self.sorting_type_is_changed = True
 
     def check_for_boundaries(self) -> None:
         # Крайняя правая граница
@@ -756,7 +780,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             if self.hash == "":
                 self.hash = server_hash
 
-            elif server_hash == self.hash:
+            elif server_hash == self.hash and not self.sorting_type_is_changed:
                 return
 
             online_users = list()
@@ -805,7 +829,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
             self.users_buttons = list()
 
             # Последовательность при которой выводятся кнопки пользователей
-            if self.isOnline.isChecked():
+            if self.sorting_type == "Online":
                 for onu in online_users:
                     if onu.split()[0] == self.username:
                         continue
@@ -814,12 +838,17 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(onu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+                    button.setIcon(Qt.QIcon('Images/online.png'))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
-                        color: white;
-                        background: rgb(0, 170, 127);
+                        color: black;
+                        background: transparent;
+                        text-align: left;
                     ''')
+
                     button.setToolTip(onu.split()[1])
+                    
+
                     self.users_buttons.append(button)
 
                     self.layout.addWidget(button) 
@@ -831,10 +860,12 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(ofu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                    button.setIcon(Qt.QIcon('Images/offline.png'))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
-                        color: white;
-                        background: rgb(0, 170, 127);
+                        color: black;
+                        background: transparent;
+                        text-align: left;
                     ''')
                     self.users_buttons.append(button)
 
@@ -843,6 +874,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                         button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
                     except:
                         button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+                    
 
                     self.layout.addWidget(button)
 
@@ -855,34 +887,46 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     if ofu.split()[0] == self.username:
                         continue
 
+                    # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
                     button = QPushButton(ofu.split()[0], objectName="whisperButton")
-                    button.setStyleSheet('''
-                        color: white;
-                        background: rgb(0, 170, 127);
-                    ''')
-                    button.setFixedSize(30, 30)
+                    button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
+                    button.setIcon(Qt.QIcon('Images/offline.png'))
+                    button.installEventFilter(self)
+                    button.setStyleSheet('''
+                        color: black;
+                        background: transparent;
+                        text-align: left;
+                    ''')
                     self.users_buttons.append(button)
 
+                    # Установка текста при наведении на кнопку
                     try:
                         button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2] + " " + ofu.split()[3])
                     except:
                         button.setToolTip(ofu.split()[1] + "\n" + ofu.split()[2])
+                    
 
                     self.layout.addWidget(button)
                 for onu in online_users:
                     if onu.split()[0] == self.username:
                         continue
-
+                    
+                    # Создаём кнопки для каждого пользователя с его именем и добавляем их в layout
                     button = QPushButton(onu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
+                    button.setIcon(Qt.QIcon('Images/online.png'))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
-                        color: white;
-                        background: rgb(0, 170, 127);
+                        color: black;
+                        background: transparent;
+                        text-align: left;
                     ''')
+
                     button.setToolTip(onu.split()[1])
+                    
+
                     self.users_buttons.append(button)
 
                     self.layout.addWidget(button) 
@@ -897,14 +941,16 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
     def eventFilter(self, source, event) -> None:
         if event.type() == QtCore.QEvent.Enter and source.objectName() == "whisperButton":
             source.setStyleSheet('''
-                color: black;
+                color: orange;
             ''')
 
         elif event.type() == QtCore.QEvent.Leave:
             source.setStyleSheet('''
-                color: white;
-                background: rgb(0, 170, 127);
-            ''')
+                        color: black;
+                        background: transparent;
+                        text-align: left;
+                    ''')
+            
 
         return super().eventFilter(source, event)
 
@@ -992,7 +1038,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
     def send_message(self) -> None:
         text = remove_spaces(self.textEdit.toPlainText())
-        if len(text) > 100:
+        if len(text) > MAX_MESSAGE_LEN:
             return show_error("Длина сообщения должна быть не более 100")
         
         else:
@@ -1384,36 +1430,8 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         return self.main.show()
 
     def create_server(self) -> None:
-        while True:
-            server_name, ok_is_pressed = QInputDialog.getText(
-                self, "Название сервера", "Введите название сервера:", QLineEdit.Normal, "")
-            if ok_is_pressed:
-                if server_name != "":
-                    server_password, ok_is_pressed = QInputDialog.getText(
-                        self, "Пароль сервера", "Введите пароль для сервера(если не требуется - оставьте поле пустым):", QLineEdit.Password, "")
-
-                    if ok_is_pressed:
-                        res = requests.get(self.__url + "/create_server", json={
-                            "serverName": server_name,
-                            "serverPassword": server_password,
-                            "username": self.username
-                        })
-
-                        if "someProblems" in res.json():
-                            return show_error("Беды")
-
-                        if "nameIsTaken" in res.json():
-                            return show_error("Данное имя сервера занято")
-
-                        self.main = Chat(username=self.username, url=self.__url,
-                                        server_id=res.json()['server_id'])
-                        break
-                    else:
-                        break
-                else:
-                    show_error("Название сервера не может быть пустым")
-            else:
-                break
+        self.main = createServerForm(username=self.username)
+        self.main.show()
 
     def show_server_login(self, server_name: str, id: int) -> None:
 
@@ -1599,7 +1617,7 @@ class AdminPanel(QtWidgets.QMainWindow, AdminUI.Ui_MainWindow):
             url=self.__url)
         self.main.show()
         self.tree.clear()
-        return self.insertUsers()
+        return self.insert_users()
 
 
 class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
@@ -1628,7 +1646,7 @@ class userCreatorForm(QtWidgets.QMainWindow, userCreatorUI.Ui_MainWindow):
                 return show_error("Возникли неполадки при подключении к серверу")
 
         # События для кнопок
-        self.createButton.pressed.connect(self.createUser)
+        self.createButton.pressed.connect(self.create_user)
         self.exitButton.pressed.connect(self.close)
 
         # Иконки
@@ -1680,7 +1698,7 @@ class searchForm(QtWidgets.QMainWindow, searchFormUI.Ui_MainWindow):
 
         self.text = ""
 
-        self.searchButton.pressed.connect(self.setText)
+        self.searchButton.pressed.connect(self.set_text)
         self.cancelButton.pressed.connect(self.close)
         self.exitButton.pressed.connect(self.close)
 
@@ -1968,7 +1986,7 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
 
     def send_private_message(self) -> None:
         text = remove_spaces(self.textEdit.toPlainText())
-        if len(text) > 100:
+        if len(text) > MAX_MESSAGE_LEN:
             return show_error("Длина сообщения должна быть не более 100")
         
         else:
@@ -2275,6 +2293,7 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
         self.msg_thread.finished.connect(self.msg_thread.deleteLater)
         self.msg_thread.start()
 
+
 class serverLogin(QtWidgets.QMainWindow, serverLoginUI.Ui_MainWindow):
     login_succeeded = pyqtSignal()
     def __init__(self, username:str, server_id:int, name:str, users_amount:int, url:str=URL) -> None:
@@ -2326,6 +2345,65 @@ class serverLogin(QtWidgets.QMainWindow, serverLoginUI.Ui_MainWindow):
             return self.close()
 
 
+class createServerForm(QtWidgets.QMainWindow, createServerFormUI.Ui_MainWindow):
+    def __init__(self, username:str) -> None:
+        super().__init__()
+
+        self.setupUi(self)
+
+        self.username = username
+        self.oldPos = 0
+
+        self.exitButton.setIcon(QtGui.QIcon(":resources/Images/cross.png"))
+
+        self.exitButton.pressed.connect(self.close)
+        self.createServerButton.pressed.connect(self.create)
+        self.hasPasswordCheckBox.pressed.connect(self.show_hide_passwordInput)
+
+        self.passwordInput.hide()
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.oldPos = self.pos()
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+    def show_hide_passwordInput(self):
+        if not self.hasPasswordCheckBox.isChecked():
+            self.passwordInput.show()
+        else:
+            self.passwordInput.hide()
+
+    def create(self):
+        server_name = self.serverNameInput.text()
+        server_password = self.passwordInput.text()
+
+        if server_name != "":
+
+            res = requests.get(self.__url + "/create_server", json={
+                "serverName": server_name,
+                "serverPassword": server_password,
+                "username": self.username
+            })
+
+            if "someProblems" in res.json():
+                return show_error("Беды")
+
+            if "nameIsTaken" in res.json():
+                return show_error("Данное имя сервера занято")
+
+            self.main = Chat(username=self.username, url=self.__url,
+                            server_id=res.json()['server_id'])
+        else:
+            show_error("Название сервера не может быть пустым")
+        
 
 if __name__ == "__main__":
     try:
