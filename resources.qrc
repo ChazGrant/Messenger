@@ -9,5 +9,7 @@
     <file>Images/disconnect.png</file>
     <file>Images/exit_from_acc.png</file>
     <file>Images/threebars.png</file>
+    <file>Images/online.png</file>
+    <file>Images/offline.png</file>
   </qresource>
 </RCC>

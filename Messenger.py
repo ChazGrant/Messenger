@@ -8,6 +8,7 @@ import AuthUI
 import MainUI
 import LobbyUI
 import serverLoginUI
+import serverLoginWithoutPasswordUI
 import createServerFormUI
 import downloadUI
 import AdminUI
@@ -838,7 +839,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(onu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
-                    button.setIcon(Qt.QIcon('Images/online.png'))
+                    button.setIcon(Qt.QIcon(":/resources/Images/online.png"))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
                         color: black;
@@ -860,7 +861,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(ofu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
-                    button.setIcon(Qt.QIcon('Images/offline.png'))
+                    button.setIcon(Qt.QIcon(":/resources/Images/offline.png"))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
                         color: black;
@@ -891,7 +892,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(ofu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=ofu.split()[0]: self.whisper(key))
-                    button.setIcon(Qt.QIcon('Images/offline.png'))
+                    button.setIcon(Qt.QIcon(":/resources/Images/offline.png"))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
                         color: black;
@@ -916,7 +917,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                     button = QPushButton(onu.split()[0], objectName="whisperButton")
                     button.setFixedSize(220, 30)
                     button.pressed.connect(lambda key=onu.split()[0]: self.whisper(key))
-                    button.setIcon(Qt.QIcon('Images/online.png'))
+                    button.setIcon(Qt.QIcon(":/resources/Images/online.png"))
                     button.installEventFilter(self)
                     button.setStyleSheet('''
                         color: black;
@@ -1443,13 +1444,26 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
             server_name = server_name
             users_amount = res.json()["users_amount"]
 
-        self.main = serverLogin(
-            url=self.__url,
-            username=self.username,
-            server_id=id,
-            name=server_name,
-            users_amount=users_amount
-            )
+        server_password = requests.get(self.__url + "/get_server_password_existence", json={
+            "server_id": id
+        })
+
+
+        if server_password.json()["server_password"] == "d41d8cd98f00b204e9800998ecf8427e":
+            self.main = serverLoginWithoutPassword(
+                url=self.__url,
+                username=self.username,
+                server_id=id,
+                name=server_name,
+                users_amount=users_amount)
+        else:
+            self.main = serverLogin(
+                url=self.__url,
+                username=self.username,
+                server_id=id,
+                name=server_name,
+                users_amount=users_amount
+                )
         self.main.show()
 
         self.main.login_succeeded.connect(lambda key=id: self.connect(id))
@@ -2308,6 +2322,9 @@ class serverLogin(QtWidgets.QMainWindow, serverLoginUI.Ui_MainWindow):
         self.usersAmount.setText(self.usersAmount.text() + str(users_amount))
 
         self.loginButton.pressed.connect(self.login)
+        self.exitButton.pressed.connect(self.close)
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -2329,6 +2346,59 @@ class serverLogin(QtWidgets.QMainWindow, serverLoginUI.Ui_MainWindow):
                                         'server_id': self.server_id,
                                         'username': self.username,
                                         'password': hashlib.md5(self.passwordInput.text().encode()).hexdigest()
+                                    })
+
+        if response.status_code == 200:
+            if "badPassword" in response.json():
+                return show_error("Неверный пароль")
+
+            if "isBanned" in response.json():
+                return show_error("Вы были забанены на этом сервере")
+
+            if "someProblems" in response.json():
+                return show_error("Возникли неполадки с сервером")
+
+            self.login_succeeded.emit()
+            return self.close()
+
+
+class serverLoginWithoutPassword(QtWidgets.QMainWindow, serverLoginWithoutPasswordUI.Ui_MainWindow):
+    login_succeeded = pyqtSignal()
+    def __init__(self, username:str, server_id:int, name:str, users_amount:int, url:str=URL) -> None:
+        super().__init__()
+        self.setupUi(self)
+
+        self.username = username
+        self.server_id = server_id
+        self.__url = url
+
+        self.serverName.setText(name)
+        self.usersAmount.setText(self.usersAmount.text() + str(users_amount))
+
+        self.loginButton.pressed.connect(self.login)
+        self.exitButton.pressed.connect(self.close)
+
+        self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
+
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.oldPos = self.pos()
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.oldPos = event.globalPos()
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        delta = QPoint(event.globalPos() - self.oldPos)
+        self.move(self.x() + delta.x(), self.y() + delta.y())
+        self.oldPos = event.globalPos()
+
+    def login(self) -> None:
+        response = requests.get(self.__url + "/connect",
+                                    json={
+                                        'server_id': self.server_id,
+                                        'username': self.username,
+                                        'password': hashlib.md5("".encode()).hexdigest()
                                     })
 
         if response.status_code == 200:

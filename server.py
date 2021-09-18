@@ -22,7 +22,7 @@ servers_hash = list()
 
 hash_ = lambda text: hashlib.md5(text.encode()).hexdigest()
 
-def get_key(keys):
+def get_key(keys) -> int:
     keys = str(keys)
     return int(keys[keys.index("[") + 1:keys.index("]")])
 
@@ -34,27 +34,27 @@ def generate_random_hash() -> str:
 
 	return hashlib.md5(out.encode()).hexdigest()
 
-def cleanhtml(raw_html):
+def cleanhtml(raw_html: str) -> str:
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', raw_html)
     return cleantext
 
-def get_server_name_(server_id):
+def get_server_name_(server_id: int) -> str:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         server_name = cur.execute(
-            f"SELECT server_name FROM `servers` WHERE `server_id`={server_id}").fetchone()[0]
+            f"SELECT server_name FROM `servers` WHERE `server_id`={int(server_id)}").fetchone()[0]
         return server_name
 
-def get_chat_name_(chat_id):
+def get_chat_name_(chat_id: int) -> str:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
-        chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {request.json['chat_id']}").fetchone()[0]
+        chatName = cur.execute(f"SELECT `chatName` FROM chats WHERE `chat_id` = {int(request.json['chat_id'])}").fetchone()[0]
         return chatName
 
 
 @app.route("/")
-def main():
+def main() -> str:
     return "Hello, User! Это наш мессенджер. А вот его статус:<a href='/status'>Status</a>"
 
 
@@ -104,7 +104,7 @@ def status():
 
 
 @app.route("/create_server")
-def create_server():
+def create_server() -> dict:
     serv_name = request.json['serverName']
     serv_pass = request.json['serverPassword']
     serv_admin = request.json['username']
@@ -137,7 +137,7 @@ def create_server():
 
 # Проверить обновляются ли юзеры на разных серверах
 @app.route("/connect")
-def connect():
+def connect() -> dict:
     with sq.connect("Messenger.db") as conn:
         try:
             cur = conn.cursor()
@@ -222,7 +222,7 @@ def connect():
 
 
 @app.route("/login")
-def login():
+def login() -> dict:
     username = request.json['username']
     password = request.json['password']
 
@@ -241,7 +241,7 @@ def login():
             }
 
 @app.route("/create_user")
-def create_user():
+def create_user() -> dict:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         username = request.json['username']
@@ -273,7 +273,7 @@ def create_user():
         }
 
 @app.route("/reg")
-def reg():
+def reg() -> dict:
     username = request.json['username']
     password = request.json['password']
     with sq.connect("Messenger.db") as conn:
@@ -304,7 +304,7 @@ def reg():
 
 
 @app.route("/send_message")
-def send_message():
+def send_message() -> dict:
     username = request.json['username']
     text = cleanhtml(decrypt(request.json['text'], 314))
     server_id = request.json['server_id']
@@ -350,7 +350,7 @@ def send_message():
 
 
 @app.route("/get_server_name")
-def get_server_name():
+def get_server_name() -> dict:
     if "username" not in request.json:
         server_id = request.json['server_id']
 
@@ -377,7 +377,7 @@ def get_server_name():
 
 
 @app.route("/get_servers")
-def get_servers():
+def get_servers() -> dict:
     with sq.connect("Messenger.db") as conn:
         try:
             cur = conn.cursor()
@@ -391,7 +391,7 @@ def get_servers():
                 }
 
 @app.route("/get_users_amount")
-def get_users_amount():
+def get_users_amount() -> dict:
     with sq.connect("Messenger.db") as conn:
         id = request.json["id"]
         users_amount = 0
@@ -407,7 +407,7 @@ def get_users_amount():
         }
 
 @app.route("/upload")
-def upload():
+def upload() -> dict:
     if "server_id" in request.args:
         server_id = request.args['server_id']
         server_name = get_server_name_(server_id)
@@ -463,7 +463,7 @@ def upload():
 
 # Можно вернуть либо один файл, либо архивом несколько
 @app.route("/download")
-def download():
+def download() -> str:
     needed_file = request.json["neededFile"]
 
     if "chat_id" in request.json: 
@@ -489,9 +489,10 @@ def download():
                 return send_from_directory(directory="static/" + str(server_name), filename=file, as_attachment=True)
             else:
                 return send_from_directory(directory="static/", filename=file, as_attachment=True)
+                
 
 @app.route("/get_files")
-def get_files():
+def get_files() -> dict:
     if "server_id" in request.json:
         server_id = request.json['server_id']
     else:
@@ -536,8 +537,20 @@ def get_files():
         "allFiles": files
     }
 
+@app.route("/get_server_password_existence")
+def get_server_password_existence() -> dict:
+    server_id = request.json["server_id"]
+
+    with sq.connect("Messenger.db") as conn:
+        cur = conn.cursor()
+        server_password = cur.execute(f"SELECT `password` FROM `servers` WHERE `server_id` = '{server_id}'").fetchone()[0]
+
+    return {
+        "server_password": server_password
+        }
+
 @app.route("/get_chat_id")
-def get_chat_id():
+def get_chat_id() -> dict:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         users = request.json["users"]
@@ -558,7 +571,7 @@ def get_chat_id():
             }
 
 @app.route("/send_private_message")
-def send_private_message():
+def send_private_message() -> dict:
     chat_id = request.json["chat_id"]
     username = request.json["username"]
     message = cleanhtml(request.json["text"])
@@ -584,7 +597,7 @@ def send_private_message():
         }
 
 @app.route("/get_private_messages")
-def get_private_messages():
+def get_private_messages() -> dict:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         companion = str(request.args['companion'])
@@ -619,7 +632,7 @@ def get_private_messages():
             }
 
 @app.route("/get_messages")
-def get_messages():
+def get_messages() -> dict:
     with sq.connect("Messenger.db") as conn:
         cur = conn.cursor()
         after = float(request.args['after'])
@@ -645,7 +658,7 @@ def get_messages():
 
 ############# SESSION #################
 @app.route("/create_session")
-def create_session():
+def create_session() -> dict:
     try:
         username = request.json["username"]
         username_for_hash = username
@@ -675,7 +688,7 @@ def create_session():
         }
 
 @app.route("/check_for_session")
-def check_for_session():
+def check_for_session() -> dict:
     username = decrypt(request.json["username"], 314)
     salted_hash = decrypt(request.json["hash"], 314)
 
@@ -688,7 +701,7 @@ def check_for_session():
 ############# SESSION #################
 
 @app.route("/get_users")
-def get_users():
+def get_users() -> dict:
     server_id = str(request.json["server_id"])
     try:
         for_admin = int(request.json["for_admin"])
@@ -794,7 +807,7 @@ def get_users():
     }
     
 @app.route("/ban_user")
-def ban():
+def ban() -> dict:
     try:
         uname = request.json['username']
 
@@ -830,7 +843,7 @@ def ban():
         }
 
 @app.route("/disconnect")
-def disconnect():
+def disconnect() -> dict:
     uname = request.json['username']
     server_id = str(request.json['server_id'])
 
