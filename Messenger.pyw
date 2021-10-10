@@ -1,3 +1,16 @@
+# Messenger
+# Copyright (C) 2021  ChazGrant (https://github.com/ChazGrant)
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QListView, QTextBrowser, QPushButton, QInputDialog, QLineEdit, QDialog, QLabel, QFrame, QAbstractItemView
@@ -24,6 +37,7 @@ import datetime
 import time
 import os
 import re
+import webbrowser
 from crypt import encrypt, decrypt
 
 URL = "http://127.0.0.1:5000"
@@ -337,6 +351,27 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
             self.show_hide_login()
         
     def remove_user(self, username):
+        accepted = False
+        self.dial = QDialog(self)
+        label = QLabel(
+            text=f"Вы уверены, что хотите выйти?")
+        
+            
+        accept = QPushButton(text="Да")
+        decline = QPushButton(text="Нет")
+
+        accept.pressed.connect(lambda: self.accept_remove_user(username))
+        decline.pressed.connect(lambda: self.dial.close())
+
+        self.dial.setLayout(QVBoxLayout())
+        self.dial.layout().addWidget(label)
+        self.dial.layout().addWidget(accept)
+        self.dial.layout().addWidget(decline)
+        self.dial.setFixedSize(310, 150)
+        self.dial.exec_()
+
+    def accept_remove_user(self, username):
+        self.dial.close()
         tmp_users = [f for _, _, f in os.walk("userdata")]
         if tmp_users:
             tmp_users = tmp_users[0]
@@ -692,7 +727,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
                 return show_error("Возникли неполадки с сервером")
 
             all_files = resp.json()['allFiles']
-            self.main = DownloadHub(all_files)
+            self.main = DownloadHub(self.server_id, all_files)
             return self.main.show()
 
     def upload(self) -> None:
@@ -1311,6 +1346,9 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
         self.showUsersButton.setIcon(QtGui.QIcon(":/resources/Images/settings.png"))
         self.createServerButton.setIcon(QtGui.QIcon(":/resources/Images/plus.png"))
 
+        self.createServerButton.setToolTip("Создать сервер")
+        self.showUsersButton.setToolTip("Админ меню")
+
         # Проверка на админа всех админов   
         if self.username != "CREATOR":
             self.createServerButton.hide()
@@ -1397,7 +1435,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
 
             all_files = resp.json()['allFiles']
 
-            self.main = DownloadHub(all_files)
+            self.main = DownloadHub("public", all_files)
             self.main.setWindowFlags(QtCore.Qt.FramelessWindowHint)
             self.main.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -1735,11 +1773,12 @@ class searchForm(QtWidgets.QMainWindow, searchFormUI.Ui_MainWindow):
 
 
 class DownloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
-    def __init__(self, items: list) -> None:
+    def __init__(self, path:str, items: list) -> None:
         super().__init__()
         self.setupUi(self)
         self.items = items
         self.is_cancelled = False
+        self.path = path
 
         self.browser = QtWidgets.QTextBrowser()
         self.listWidget.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -1747,7 +1786,7 @@ class DownloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
 
         self.oldPos = 0.0
 
-        self.selectButton.pressed.connect(self.download)
+        self.selectButton.pressed.connect(self.view)
 
         self.exitButton.setIcon(QtGui.QIcon(":/resources/Images/cross.png"))
 
@@ -1765,7 +1804,12 @@ class DownloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
 
-    def download(self) -> None:
+    def generate_hash(self, word:str) -> str:
+        odd_salt = str(hashlib.md5(word[::2].encode()).hexdigest())
+        even_salt = str(hashlib.md5(word[::-2][::-1].encode()).hexdigest())
+        return hashlib.md5(word.encode()).hexdigest() + odd_salt + even_salt
+
+    def view(self) -> None:
         needed_files = list()
         self.downloaded_files = dict()
 
@@ -1773,38 +1817,58 @@ class DownloadHub(QtWidgets.QMainWindow, downloadUI.Ui_Form):
             needed_files.append(item.text())
 
         for needed_file in needed_files:
-            resp = requests.get(URL + "/download", json={
-                "neededFile": needed_file
-            })
-
-            files_list = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
-
-            is_found = False
-
-            for file in filesList:
-                if needed_file == file:
-                    is_found = True
-
-                    self.dial = QDialog(self)
-                    label = QLabel(
-                        text=f"{file}<br>уже скачан")
+            if needed_file.split(".")[-1] in ["docx", "doc", "pptx", "xlsx", "xls"]:
+                self.dial = QDialog(self)
+                label = QLabel(
+                    text=f"{needed_file}")
+                
                     
+                dload = QPushButton(text="Скачать")
+                view = QPushButton(text="Просмотреть")
+
+                dload.pressed.connect(lambda: self.download(file, resp.content))
+                url = f"https://docs.google.com/gview?url=http://mezano.pythonanywhere.com/open?link={self.generate_hash(needed_file)}:{self.path}"
+                view.pressed.connect(lambda: webbrowser.open(url))
+
+                self.dial.setLayout(QVBoxLayout())
+                self.dial.layout().addWidget(label)
+                self.dial.layout().addWidget(dload)
+                self.dial.layout().addWidget(view)
+                self.dial.setFixedSize(310, 150)
+                self.dial.exec_()
+            else:
+                resp = requests.get(URL + "/download", json={
+                    "neededFile": needed_file
+                })
+
+                files_list = [f for _, _, f in os.walk(os.getcwd() + "/Загрузки")][0]
+
+                is_found = False
+
+                for file in files_list:
+                    if needed_file == file:
+                        is_found = True
+
+                        self.dial = QDialog(self)
+                        label = QLabel(
+                            text=f"{file}<br>уже скачан")
                         
-                    accept = QPushButton(text="Скачать заново")
-                    decline = QPushButton(text="Отменить")
+                            
+                        accept = QPushButton(text="Скачать заново")
+                        decline = QPushButton(text="Отменить")
 
-                    accept.pressed.connect(lambda: self.accept(file, resp.content))
-                    decline.pressed.connect(lambda: self.dial.close())
+                        accept.pressed.connect(lambda: self.accept(file, resp.content))
+                        decline.pressed.connect(lambda: self.dial.close())
 
-                    self.dial.setLayout(QVBoxLayout())
-                    self.dial.layout().addWidget(label)
-                    self.dial.layout().addWidget(accept)
-                    self.dial.layout().addWidget(decline)
-                    self.dial.setFixedSize(310, 150)
-                    self.dial.exec_()
+                        self.dial.setLayout(QVBoxLayout())
+                        self.dial.layout().addWidget(label)
+                        self.dial.layout().addWidget(accept)
+                        self.dial.layout().addWidget(decline)
+                        self.dial.setFixedSize(310, 150)
+                        self.dial.exec_()
 
-            if not is_found:
-                self.downloadedFiles[needed_file] = resp.content
+                if not is_found:
+                    self.downloaded_files[needed_file] = resp.content
             
         if self.downloaded_files:
             info = ""
@@ -2268,7 +2332,7 @@ class privateChat(QtWidgets.QMainWindow, SecondaryUI.Ui_MainWindow):
                 return show_error("Возникли неполадки с сервером")
 
             all_files = resp.json()['allFiles']
-            self.main = DownloadHub(all_files)
+            self.main = DownloadHub(self.server_name, all_files)
             return self.main.show()
         else:
             return show_error("Возникли неполадки при подключении")
@@ -2484,7 +2548,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
 
-    window = Auth()
+    window = Auth(URL)
     window.setFixedSize(sizes["Chat"]["WIDTH"], sizes["Chat"]["HEIGHT"])
     window.show()
     app.exec_()

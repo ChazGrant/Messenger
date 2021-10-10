@@ -193,7 +193,7 @@ class Ui_MainWindow(object):
         self.label.setObjectName("label")
         self.sortingTypeButton = QtWidgets.QPushButton(self.frame)
         self.sortingTypeButton.setGeometry(QtCore.QRect(900, 510, 151, 61))
-        self.sortingTypeButton.setStyleSheet("")
+        self.sortingTypeButton.setStyleSheet("background-color: green;")
         self.sortingTypeButton.setObjectName("sortingTypeButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)

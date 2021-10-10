@@ -22,7 +22,6 @@ import os
 import random
 
 
-
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 app = Flask(__name__)
@@ -36,6 +35,11 @@ hash_ = lambda text: hashlib.md5(text.encode()).hexdigest()
 def get_key(keys) -> int:
     keys = str(keys)
     return int(keys[keys.index("[") + 1:keys.index("]")])
+
+def generate_hash(word:str) -> str:
+    odd_salt = str(hashlib.md5(word[::2].encode()).hexdigest())
+    even_salt = str(hashlib.md5(word[::-2][::-1].encode()).hexdigest())
+    return hashlib.md5(word.encode()).hexdigest() + odd_salt + even_salt
 
 def generate_random_hash() -> str:
 	out = ""
@@ -68,6 +72,48 @@ def get_chat_name_(chat_id: int) -> str:
 def main() -> str:
     return "Hello, User! Это наш мессенджер. А вот его статус:<a href='/status'>Status</a>"
 
+@app.route("/open")
+def return_file():
+    _hash, path = request.args.get("link").split(":")
+
+
+    if path == "public":
+        files = [f for _, _, f in os.walk("static/public")]
+
+        if files:
+            files = files[0]
+
+        for file in files:
+            if generate_hash(file) == _hash:
+                return send_from_directory(directory="static/public", filename=file)
+    elif path.isdigit():
+        try:
+            with sq.connect("Messenger.db") as conn:
+                cur = conn.cursor()
+                server_name = cur.execute(
+                    f"SELECT server_name FROM `servers` WHERE `server_id`={int(path)}").fetchone()[0]
+            files = [f for _, _, f in os.walk("static/" + server_name)]
+
+            if files:
+                files = files[0]
+
+            for file in files:
+                if generate_hash(file) == _hash:
+                    return send_from_directory(directory="static/" + server_name, filename=file)
+        except:
+            return ""
+    else:
+        files = [f for _, _, f in os.walk("static/privateChats/" + path)]
+
+        if files:
+            files = files[0]
+
+        for file in files:
+            if generate_hash(file) == _hash:
+                return send_from_directory(directory="static/privateChats/" + path, filename=file)
+
+
+    return ""
 
 @app.route("/status")
 def status():

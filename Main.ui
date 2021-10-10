@@ -428,7 +428,7 @@ QLineEdit{
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">background-color: green;</string>
      </property>
      <property name="text">
       <string>Онлайн</string>
