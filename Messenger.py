@@ -354,7 +354,9 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         accepted = False
         self.dial = QDialog(self)
         label = QLabel(
-            text=f"Вы уверены, что хотите выйти?")
+            text=f"Вы уверены, что хотите удалить аккаунт из списка?")
+        label.setWordWrap(True)
+        label.setAlignment(Qt.Qt.AlignCenter)
         
             
         accept = QPushButton(text="Да")
@@ -367,7 +369,7 @@ class Auth(QtWidgets.QMainWindow, AuthUI.Ui_MainWindow):
         self.dial.layout().addWidget(label)
         self.dial.layout().addWidget(accept)
         self.dial.layout().addWidget(decline)
-        self.dial.setFixedSize(310, 150)
+        self.dial.setFixedSize(430, 150)
         self.dial.exec_()
 
     def accept_remove_user(self, username):
@@ -1314,7 +1316,7 @@ class Chat(QtWidgets.QMainWindow, MainUI.Ui_MainWindow):
 
         self.close()
         self.timer.stop()
-        self.main = Auth()
+        self.main = Auth(url=URL)
         return self.main.show()
 
     # Отключиться от сервера
@@ -1423,7 +1425,7 @@ class Lobby(QtWidgets.QMainWindow, LobbyUI.Ui_MainWindow):
     def log_off(self) -> None:
         self.close()
 
-        self.main = Auth()
+        self.main = Auth(url=URL)
         return self.main.show()
 
     def download(self) -> None:
